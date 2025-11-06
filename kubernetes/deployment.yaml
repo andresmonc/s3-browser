@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-browser
+  namespace: default
+  labels:
+    app: s3-browser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3-browser
+  template:
+    metadata:
+      labels:
+        app: s3-browser
+    spec:
+      containers:
+      - name: s3-browser
+        image: s3-browser:latest # Replace with your image name and tag
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: s3-browser-config
+        # For production, use secrets instead of a ConfigMap for credentials.
+        # env:
+        # - name: VITE_S3_ACCESS_KEY_ID
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: s3-credentials
+        #       key: accessKeyId
+        # - name: VITE_S3_SECRET_ACCESS_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: s3-credentials
+        #       key: secretAccessKey
