@@ -3,6 +3,7 @@ import { s3Client } from '../s3-client';
 import { CreateBucketCommand, DeleteBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
 import CreateBucketModal from './CreateBucketModal';
 import BucketSettingsModal from './BucketSettingsModal';
+import RenameBucketModal from './RenameBucketModal';
 
 interface BucketListProps {
     selectedBucket: string | null;
@@ -13,8 +14,15 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     const [buckets, setBuckets] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+    const [selectedBucketToRename, setSelectedBucketToRename] = useState<string | null>(null);
     const [selectedBucketForSettings, setSelectedBucketForSettings] = useState<string | null>(null);
     const [refresh, setRefresh] = useState(false);
+
+    const handleRenameBucket = (bucketName: string) => {
+        setSelectedBucketToRename(bucketName);
+        setIsRenameModalOpen(true);
+    };
 
     useEffect(() => {
         const fetchBuckets = async () => {
@@ -58,28 +66,31 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Buckets</h2>
-                <button onClick={() => setIsModalOpen(true)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="h5">Buckets</h2>
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
                     New
                 </button>
             </div>
-            <ul>
+            <ul className="list-group">
                 {buckets.map(bucket => (
                     <li key={bucket} 
-                        className={`flex justify-between items-center p-2 rounded cursor-pointer ${
-                            selectedBucket === bucket ? 'bg-gray-600' : 'hover:bg-gray-700'
-                        }`}>
-                        <span onClick={() => onSelectBucket(bucket)} className="flex-grow">{bucket}</span>
+                        className={`list-group-item d-flex justify-content-between align-items-center ${selectedBucket === bucket ? 'active' : ''}`}>
+                        <span onClick={() => onSelectBucket(bucket)} className="flex-grow-1">{bucket}</span>
                         <button onClick={() => {
                             setSelectedBucketForSettings(bucket);
                             setIsSettingsModalOpen(true);
-                        }} className="text-gray-400 hover:text-white mr-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        }} className="btn btn-sm btn-outline-secondary me-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots" viewBox="0 0 16 16">
+                                <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
                             </svg>
                         </button>
-                        <button onClick={() => handleDeleteBucket(bucket)} className="text-red-500 hover:text-red-700 font-bold">X</button>
+                        <button onClick={() => handleRenameBucket(bucket)} className="btn btn-sm btn-outline-secondary me-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil" viewBox="0 0 16 16">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                            </svg>
+                        </button>
+                        <button onClick={() => handleDeleteBucket(bucket)} className="btn btn-sm btn-danger">X</button>
                     </li>
                 ))}
             </ul>
@@ -95,6 +106,20 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                     onClose={() => {
                         setIsSettingsModalOpen(false);
                         setSelectedBucketForSettings(null);
+                    }}
+                />
+            )}
+            {selectedBucketToRename && (
+                <RenameBucketModal
+                    oldBucketName={selectedBucketToRename}
+                    isOpen={isRenameModalOpen}
+                    onClose={() => {
+                        setIsRenameModalOpen(false);
+                        setSelectedBucketToRename(null);
+                    }}
+                    onRenameSuccess={() => {
+                        setRefresh(!refresh);
+                        onSelectBucket(null);
                     }}
                 />
             )}

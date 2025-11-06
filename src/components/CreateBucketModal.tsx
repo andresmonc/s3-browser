@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { s3Client } from '../s3-client';
+import { HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 
 interface CreateBucketModalProps {
     isOpen: boolean;
@@ -8,38 +10,74 @@ interface CreateBucketModalProps {
 
 const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps) => {
     const [bucketName, setBucketName] = useState('');
+    const [creating, setCreating] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setBucketName('');
+            setCreating(false);
+        }
+    }, [isOpen]);
+
+    const handleCreate = async () => {
+        if (!/^[a-z0-9.-]{3,63}$/.test(bucketName)) {
+            alert('Invalid bucket name. Bucket names must be between 3 and 63 characters long and can only contain lowercase letters, numbers, periods, and hyphens.');
+            return;
+        }
+        setCreating(true);
+        try {
+            await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+            alert('Bucket name already exists.');
+        } catch (error) {
+            if ((error as any).name === 'NotFound') {
+                try {
+                    await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+                    onCreate(bucketName);
+                } catch (createError) {
+                    console.error('Error creating bucket:', createError);
+                    alert(`Error creating bucket: ${(createError as any).message}`);
+                }
+            } else {
+                console.error('Error checking bucket name:', error);
+                alert(`Error checking bucket name: ${(error as any).message}`);
+            }
+        }
+        setCreating(false);
+    };
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (bucketName) {
-            onCreate(bucketName);
-            setBucketName('');
-        }
-    };
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg shadow-md w-1/3 text-black">
-                <h2 className="text-xl font-bold mb-4">Create New Bucket</h2>
-                <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        value={bucketName}
-                        onChange={(e) => setBucketName(e.target.value)}
-                        className="w-full p-2 border rounded mb-4"
-                        placeholder="Bucket Name"
-                    />
-                    <div className="flex justify-end">
-                        <button type="button" onClick={onClose} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2">
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <div className="modal-dialog">
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title">Create New Bucket</h5>
+                        <button type="button" className="btn-close" aria-label="Close" onClick={onClose}></button>
+                    </div>
+                    <div className="modal-body">
+                        <div className="mb-3">
+                            <label htmlFor="bucketName" className="form-label">Bucket Name</label>
+                            <input
+                                type="text"
+                                id="bucketName"
+                                value={bucketName}
+                                onChange={(e) => setBucketName(e.target.value)}
+                                className="form-control"
+                                placeholder="Bucket Name"
+                                disabled={creating}
+                            />
+                        </div>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" onClick={onClose} className="btn btn-secondary" disabled={creating}>
                             Cancel
                         </button>
-                        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            Create
+                        <button type="button" onClick={handleCreate} className="btn btn-primary" disabled={creating || !bucketName}>
+                            {creating ? 'Creating...' : 'Create'}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

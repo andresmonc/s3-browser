@@ -72,43 +72,45 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     const filteredObjects = objects.filter(obj => obj.Key?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (!selectedBucket) {
-        return <div className="text-center text-gray-500">Select a bucket to see its objects.</div>;
+        return <div className="text-center text-secondary">Select a bucket to see its objects.</div>;
     }
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow-md h-full flex flex-col">
-            <h2 className="text-2xl font-bold mb-4">Objects in {selectedBucket}</h2>
-            <FileUploader selectedBucket={selectedBucket} onUploadSuccess={forceRefresh} />
-            <input
-                type="text"
-                placeholder="Search objects..."
-                className="w-full p-2 border rounded my-4"
-                onChange={e => setSearchTerm(e.target.value)}
-            />
-            <div className="flex-grow overflow-y-auto">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b">
-                            <th className="p-2">Name</th>
-                            <th className="p-2">Size</th>
-                            <th className="p-2">Last Modified</th>
-                            <th className="p-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredObjects.map(obj => (
-                            <tr key={obj.Key} className="hover:bg-gray-50">
-                                <td className="p-2">{obj.Key}</td>
-                                <td className="p-2">{prettyBytes(obj.Size || 0)}</td>
-                                <td className="p-2">{obj.LastModified?.toLocaleString()}</td>
-                                <td className="p-2">
-                                    <button onClick={() => handleDownloadObject(obj.Key!)} className="text-blue-500 hover:underline mr-2">Download</button>
-                                    <button onClick={() => handleDeleteObject(obj.Key!)} className="text-red-500 hover:underline">Delete</button>
-                                </td>
+        <div className="card shadow-sm h-100 d-flex flex-column">
+            <div className="card-body d-flex flex-column">
+                <h2 className="card-title h5">Objects in {selectedBucket}</h2>
+                <FileUploader selectedBucket={selectedBucket} onUploadSuccess={forceRefresh} />
+                <input
+                    type="text"
+                    placeholder="Search objects..."
+                    className="form-control my-3"
+                    onChange={e => setSearchTerm(e.target.value)}
+                />
+                <div className="flex-grow-1 overflow-auto">
+                    <table className="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Size</th>
+                                <th scope="col">Last Modified</th>
+                                <th scope="col">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredObjects.map(obj => (
+                                <tr key={obj.Key}>
+                                    <td>{obj.Key}</td>
+                                    <td>{prettyBytes(obj.Size || 0)}</td>
+                                    <td>{obj.LastModified?.toLocaleString()}</td>
+                                    <td>
+                                        <button onClick={() => handleDownloadObject(obj.Key!)} className="btn btn-link p-0 me-2">Download</button>
+                                        <button onClick={() => handleDeleteObject(obj.Key!)} className="btn btn-link p-0 text-danger">Delete</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

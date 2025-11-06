@@ -54,7 +54,7 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
     return (
-        <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+        <div {...getRootProps()} className={`border border-dashed rounded p-4 text-center ${isDragActive ? 'border-primary bg-light' : 'border-secondary'}`}>
             <input {...getInputProps()} />
             {
                 isDragActive ?
@@ -62,13 +62,13 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
                     <p>Drag 'n' drop some files here, or click to select files</p>
             }
             {uploads.length > 0 && (
-                <div className="mt-4 text-left">
-                    <h4 className="font-bold">Uploads:</h4>
+                <div className="mt-3 text-start">
+                    <h4 className="h6">Uploads:</h4>
                     {uploads.map((upload, index) => (
                         <div key={index} className="my-1">
                             <span>{upload.file.name}</span>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${upload.progress}%` }}></div>
+                            <div className="progress" style={{ height: '10px' }}>
+                                <div className="progress-bar" role="progressbar" style={{ width: `${upload.progress}%` }} aria-valuenow={upload.progress} aria-valuemin={0} aria-valuemax={100}></div>
                             </div>
                         </div>
                     ))}

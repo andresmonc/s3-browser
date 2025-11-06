@@ -1,4 +1,4 @@
-import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketPolicyCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketPolicyCommand, PutBucketWebsiteCommand, DeleteBucketPolicyCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand } from "@aws-sdk/client-s3";
+import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketPolicyCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketPolicyCommand, PutBucketWebsiteCommand, DeleteBucketPolicyCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand, GetPublicAccessBlockCommand, PutPublicAccessBlockCommand, DeletePublicAccessBlockCommand } from "@aws-sdk/client-s3";
 import { useEffect, useState } from "react";
 import { s3Client } from "../s3-client";
 
@@ -14,6 +14,10 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
     const [corsRules, setCorsRules] = useState('');
     const [websiteConfig, setWebsiteConfig] = useState('');
     const [loggingConfig, setLoggingConfig] = useState('');
+    const [blockPublicAcls, setBlockPublicAcls] = useState(false);
+    const [ignorePublicAcls, setIgnorePublicAcls] = useState(false);
+    const [blockPublicPolicy, setBlockPublicPolicy] = useState(false);
+    const [restrictPublicBuckets, setRestrictPublicBuckets] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -100,6 +104,23 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                     "TargetPrefix": `logs/${bucketName}/`
                 }, null, 2));
             }
+
+            try {
+                const publicAccessBlock = await s3Client.send(new GetPublicAccessBlockCommand({ Bucket: bucketName }));
+                setBlockPublicAcls(publicAccessBlock.PublicAccessBlockConfiguration?.BlockPublicAcls || false);
+                setIgnorePublicAcls(publicAccessBlock.PublicAccessBlockConfiguration?.IgnorePublicAcls || false);
+                setBlockPublicPolicy(publicAccessBlock.PublicAccessBlockConfiguration?.BlockPublicPolicy || false);
+                setRestrictPublicBuckets(publicAccessBlock.PublicAccessBlockConfiguration?.RestrictPublicBuckets || false);
+            } catch (error) {
+                if ((error as any).name !== 'NoSuchPublicAccessBlockConfiguration') {
+                    console.error('Error fetching public access block configuration:', error);
+                } else {
+                    setBlockPublicAcls(false);
+                    setIgnorePublicAcls(false);
+                    setBlockPublicPolicy(false);
+                    setRestrictPublicBuckets(false);
+                }
+            }
         };
 
         fetchBucketSettings();
@@ -157,6 +178,24 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             errors.push(`Error saving logging configuration: ${e.message}`);
         }
 
+        try {
+            if (blockPublicAcls || ignorePublicAcls || blockPublicPolicy || restrictPublicBuckets) {
+                await s3Client.send(new PutPublicAccessBlockCommand({
+                    Bucket: bucketName,
+                    PublicAccessBlockConfiguration: {
+                        BlockPublicAcls: blockPublicAcls,
+                        IgnorePublicAcls: ignorePublicAcls,
+                        BlockPublicPolicy: blockPublicPolicy,
+                        RestrictPublicBuckets: restrictPublicBuckets,
+                    },
+                }));
+            } else {
+                await s3Client.send(new DeletePublicAccessBlockCommand({ Bucket: bucketName }));
+            }
+        } catch (e: any) {
+            errors.push(`Error saving public access block configuration: ${e.message}`);
+        }
+
         if (errors.length > 0) {
             setError(errors.join('\n'));
         } else {
@@ -168,72 +207,132 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center" onClick={handleClose}>
-            <div className="bg-white rounded-lg p-8 w-1/2 max-w-4xl h-3/4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold mb-4">Bucket Settings: {bucketName}</h2>
-
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                        <strong className="font-bold">Error:</strong>
-                        <span className="block sm:inline"> {error}</span>
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={handleClose}>
+            <div className="modal-dialog modal-lg">
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h5 className="modal-title">Bucket Settings: {bucketName}</h5>
+                        <button type="button" className="btn-close" aria-label="Close" onClick={handleClose}></button>
                     </div>
-                )}
+                    <div className="modal-body">
+                        {error && (
+                            <div className="alert alert-danger" role="alert">
+                                <strong>Error:</strong> {error}
+                            </div>
+                        )}
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Bucket Policy (JSON)</label>
-                    <textarea
-                        value={bucketPolicy}
-                        onChange={(e) => {
-                            setBucketPolicy(e.target.value);
-                            setHasUnsavedChanges(true);
-                        }}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-48"
-                    ></textarea>
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">Bucket Policy (JSON)</label>
+                            <textarea
+                                value={bucketPolicy}
+                                onChange={(e) => {
+                                    setBucketPolicy(e.target.value);
+                                    setHasUnsavedChanges(true);
+                                }}
+                                className="form-control" style={{ height: '150px' }}
+                            ></textarea>
+                        </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">CORS Rules (JSON)</label>
-                    <textarea
-                        value={corsRules}
-                        onChange={(e) => {
-                            setCorsRules(e.target.value);
-                            setHasUnsavedChanges(true);
-                        }}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-48"
-                    ></textarea>
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">CORS Rules (JSON)</label>
+                            <textarea
+                                value={corsRules}
+                                onChange={(e) => {
+                                    setCorsRules(e.target.value);
+                                    setHasUnsavedChanges(true);
+                                }}
+                                className="form-control" style={{ height: '150px' }}
+                            ></textarea>
+                        </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Static Website Hosting (JSON)</label>
-                    <textarea
-                        value={websiteConfig}
-                        onChange={(e) => {
-                            setWebsiteConfig(e.target.value);
-                            setHasUnsavedChanges(true);
-                        }}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24"
-                    ></textarea>
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">Static Website Hosting (JSON)</label>
+                            <textarea
+                                value={websiteConfig}
+                                onChange={(e) => {
+                                    setWebsiteConfig(e.target.value);
+                                    setHasUnsavedChanges(true);
+                                }}
+                                className="form-control" style={{ height: '100px' }}
+                            ></textarea>
+                        </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Server Access Logging (JSON)</label>
-                    <textarea
-                        value={loggingConfig}
-                        onChange={(e) => {
-                            setLoggingConfig(e.target.value);
-                            setHasUnsavedChanges(true);
-                        }}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24"
-                    ></textarea>
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">Server Access Logging (JSON)</label>
+                            <textarea
+                                value={loggingConfig}
+                                onChange={(e) => {
+                                    setLoggingConfig(e.target.value);
+                                    setHasUnsavedChanges(true);
+                                }}
+                                className="form-control" style={{ height: '100px' }}
+                            ></textarea>
+                        </div>
 
-                <div className="flex justify-end">
-                    <button onClick={handleClose} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">
-                        Cancel
-                    </button>
-                    <button onClick={handleSave} className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${!hasUnsavedChanges && 'opacity-50 cursor-not-allowed'}`}>
-                        Save
-                    </button>
+                        <div className="mb-3">
+                            <h5 className="mb-2">Public Access Block Settings</h5>
+                            <div className="form-check">
+                                <input
+                                    type="checkbox"
+                                    id="blockPublicAcls"
+                                    checked={blockPublicAcls}
+                                    onChange={(e) => {
+                                        setBlockPublicAcls(e.target.checked);
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                    className="form-check-input"
+                                />
+                                <label className="form-check-label" htmlFor="blockPublicAcls">Block Public ACLs</label>
+                            </div>
+                            <div className="form-check">
+                                <input
+                                    type="checkbox"
+                                    id="ignorePublicAcls"
+                                    checked={ignorePublicAcls}
+                                    onChange={(e) => {
+                                        setIgnorePublicAcls(e.target.checked);
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                    className="form-check-input"
+                                />
+                                <label className="form-check-label" htmlFor="ignorePublicAcls">Ignore Public ACLs</label>
+                            </div>
+                            <div className="form-check">
+                                <input
+                                    type="checkbox"
+                                    id="blockPublicPolicy"
+                                    checked={blockPublicPolicy}
+                                    onChange={(e) => {
+                                        setBlockPublicPolicy(e.target.checked);
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                    className="form-check-input"
+                                />
+                                <label className="form-check-label" htmlFor="blockPublicPolicy">Block Public Policy</label>
+                            </div>
+                            <div className="form-check">
+                                <input
+                                    type="checkbox"
+                                    id="restrictPublicBuckets"
+                                    checked={restrictPublicBuckets}
+                                    onChange={(e) => {
+                                        setRestrictPublicBuckets(e.target.checked);
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                    className="form-check-input"
+                                />
+                                <label className="form-check-label" htmlFor="restrictPublicBuckets">Restrict Public Buckets</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-footer">
+                        <button onClick={handleClose} className="btn btn-secondary me-2">
+                            Cancel
+                        </button>
+                        <button onClick={handleSave} className={`btn btn-primary ${!hasUnsavedChanges ? 'disabled' : ''}`}>
+                            Save
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
