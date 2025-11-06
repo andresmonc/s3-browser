@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { s3Client } from '../s3-client';
 import { CreateBucketCommand, DeleteBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
 import CreateBucketModal from './CreateBucketModal';
+import BucketSettingsModal from './BucketSettingsModal';
 
 interface BucketListProps {
     selectedBucket: string | null;
@@ -11,6 +12,8 @@ interface BucketListProps {
 const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     const [buckets, setBuckets] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [selectedBucketForSettings, setSelectedBucketForSettings] = useState<string | null>(null);
     const [refresh, setRefresh] = useState(false);
 
     useEffect(() => {
@@ -68,6 +71,14 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                             selectedBucket === bucket ? 'bg-gray-600' : 'hover:bg-gray-700'
                         }`}>
                         <span onClick={() => onSelectBucket(bucket)} className="flex-grow">{bucket}</span>
+                        <button onClick={() => {
+                            setSelectedBucketForSettings(bucket);
+                            setIsSettingsModalOpen(true);
+                        }} className="text-gray-400 hover:text-white mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                            </svg>
+                        </button>
                         <button onClick={() => handleDeleteBucket(bucket)} className="text-red-500 hover:text-red-700 font-bold">X</button>
                     </li>
                 ))}
@@ -77,6 +88,16 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                 onClose={() => setIsModalOpen(false)}
                 onCreate={handleCreateBucket}
             />
+            {selectedBucketForSettings && (
+                <BucketSettingsModal
+                    bucketName={selectedBucketForSettings}
+                    isOpen={isSettingsModalOpen}
+                    onClose={() => {
+                        setIsSettingsModalOpen(false);
+                        setSelectedBucketForSettings(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
