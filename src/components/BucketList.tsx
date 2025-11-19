@@ -104,6 +104,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                     buckets.map((bucket, index) => (
                         <div
                             key={bucket}
+                            onClick={() => onSelectBucket(bucket)}
                             style={{ animationDelay: `${index * 50}ms` }}
                             className={`group relative flex items-center justify-between p-2 rounded-lg border transition-all duration-300 cursor-pointer transform hover:scale-[1.01] ${
                                 selectedBucket === bucket
@@ -111,10 +112,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                                     : 'bg-white/80 backdrop-blur-sm border-slate-200 hover:border-blue-300 hover:shadow-md'
                             }`}
                         >
-                            <div 
-                                onClick={() => onSelectBucket(bucket)} 
-                                className="flex-1 min-w-0 pr-2"
-                            >
+                            <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2">
                                     <div className={`w-2 h-2 rounded-full ${
                                         selectedBucket === bucket 
