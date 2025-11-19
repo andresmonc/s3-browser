@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 interface S3Credentials {
     endpoint: string;
     region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
 }
 
 interface SettingsModalProps {
@@ -63,16 +63,16 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     }, [isOpen]);
 
     const handleSave = () => {
-        if (!endpoint || !accessKeyId || !secretAccessKey) {
-            setError('Please fill in all required fields (Endpoint, Access Key ID, and Secret Access Key)');
+        if (!endpoint) {
+            setError('Please fill in the required field (Endpoint)');
             return;
         }
 
         const credentials: S3Credentials = {
             endpoint: endpoint.trim(),
             region: region.trim() || 'us-east-1',
-            accessKeyId: accessKeyId.trim(),
-            secretAccessKey: secretAccessKey.trim(),
+            accessKeyId: accessKeyId.trim() || undefined,
+            secretAccessKey: secretAccessKey.trim() || undefined,
         };
 
         saveCredentialsToStorage(credentials);
@@ -134,7 +134,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
 
                         <div className="mb-3">
                             <label htmlFor="accessKeyId" className="form-label">
-                                Access Key ID <span className="text-danger">*</span>
+                                Access Key ID
                             </label>
                             <input
                                 type="text"
@@ -145,14 +145,14 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
                                     setError(null);
                                 }}
                                 className="form-control"
-                                placeholder="Your access key ID"
-                                required
+                                placeholder="Your access key ID (optional)"
                             />
+                            <small className="form-text text-muted">Optional: Required only for authenticated access</small>
                         </div>
 
                         <div className="mb-3">
                             <label htmlFor="secretAccessKey" className="form-label">
-                                Secret Access Key <span className="text-danger">*</span>
+                                Secret Access Key
                             </label>
                             <div className="input-group">
                                 <input
@@ -164,8 +164,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
                                         setError(null);
                                     }}
                                     className="form-control"
-                                    placeholder="Your secret access key"
-                                    required
+                                    placeholder="Your secret access key (optional)"
                                 />
                                 <button
                                     type="button"
@@ -175,6 +174,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
                                     {showSecret ? 'Hide' : 'Show'}
                                 </button>
                             </div>
+                            <small className="form-text text-muted">Optional: Required only for authenticated access</small>
                         </div>
                     </div>
                     <div className="modal-footer">

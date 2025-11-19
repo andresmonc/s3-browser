@@ -4,20 +4,26 @@ import { loadCredentialsFromStorage } from './components/SettingsModal';
 export const getS3Client = (): S3Client | null => {
     const credentials = loadCredentialsFromStorage();
     
-    if (!credentials || !credentials.endpoint || !credentials.accessKeyId || !credentials.secretAccessKey) {
+    if (!credentials || !credentials.endpoint) {
         return null;
     }
 
     // Create a new client instance with current credentials
-    return new S3Client({
+    const clientConfig: any = {
         endpoint: credentials.endpoint,
         region: credentials.region || 'us-east-1',
-        credentials: {
+        forcePathStyle: true, // Required for MinIO
+    };
+
+    // Only include credentials if both accessKeyId and secretAccessKey are provided
+    if (credentials.accessKeyId && credentials.secretAccessKey) {
+        clientConfig.credentials = {
             accessKeyId: credentials.accessKeyId,
             secretAccessKey: credentials.secretAccessKey,
-        },
-        forcePathStyle: true, // Required for MinIO
-    });
+        };
+    }
+
+    return new S3Client(clientConfig);
 };
 
 // Function to refresh the client instance (call this after updating credentials)
