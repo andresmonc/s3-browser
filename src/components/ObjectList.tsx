@@ -3,6 +3,7 @@ import { getS3Client } from '../s3-client';
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, _Object } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
 import FileUploader from './FileUploader';
+import Button from './ui/Button';
 
 interface ObjectListProps {
     selectedBucket: string | null;
@@ -168,18 +169,20 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                                         <td className="py-4 px-6 text-slate-600 font-medium text-sm">{obj.LastModified?.toLocaleString()}</td>
                                         <td className="py-4 px-6">
                                             <div className="flex items-center justify-end space-x-2">
-                                                <button 
+                                                <Button 
                                                     onClick={() => handleDownloadObject(obj.Key!)} 
-                                                    className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                                    variant="primary"
+                                                    size="sm"
                                                 >
                                                     Download
-                                                </button>
-                                                <button 
+                                                </Button>
+                                                <Button 
                                                     onClick={() => handleDeleteObject(obj.Key!)} 
-                                                    className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                                    variant="danger"
+                                                    size="sm"
                                                 >
                                                     Delete
-                                                </button>
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>

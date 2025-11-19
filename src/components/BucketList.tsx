@@ -4,6 +4,7 @@ import { CreateBucketCommand, DeleteBucketCommand, ListBucketsCommand } from '@a
 import CreateBucketModal from './CreateBucketModal';
 import BucketSettingsModal from './BucketSettingsModal';
 import RenameBucketModal from './RenameBucketModal';
+import Button from './ui/Button';
 
 interface BucketListProps {
     selectedBucket: string | null;
@@ -71,16 +72,18 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
         <div>
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Buckets</h2>
-                <button 
-                    onClick={() => setIsModalOpen(true)} 
-                    className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-110 relative overflow-hidden group"
+                <Button 
+                    onClick={() => setIsModalOpen(true)}
+                    variant="primary"
+                    size="md"
+                    icon={
+                        <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                    }
                 >
-                    <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>New</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                </button>
+                    New
+                </Button>
             </div>
             <div className="space-y-3">
                 {buckets.length === 0 ? (

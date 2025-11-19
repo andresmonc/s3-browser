@@ -1,6 +1,11 @@
 import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketPolicyCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketPolicyCommand, PutBucketWebsiteCommand, DeleteBucketPolicyCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand, GetPublicAccessBlockCommand, PutPublicAccessBlockCommand, DeletePublicAccessBlockCommand } from "@aws-sdk/client-s3";
 import { useEffect, useState } from "react";
 import { getS3Client } from "../s3-client";
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import { Textarea } from './ui/Input';
+import ErrorAlert from './ui/ErrorAlert';
+import { ICON_GRADIENTS } from '../utils/constants';
 
 
 interface BucketSettingsModalProps {
@@ -206,186 +211,107 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         }
     };
 
-    if (!isOpen) return null;
+    const icon = (
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    );
+
+    const footer = (
+        <div className="flex justify-end space-x-3">
+            <Button variant="secondary" onClick={handleClose}>
+                Cancel
+            </Button>
+            <Button 
+                variant="primary" 
+                onClick={handleSave} 
+                disabled={!hasUnsavedChanges}
+                className={!hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+                Save Changes
+            </Button>
+        </div>
+    );
+
+    const handleChange = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setter(e.target.value);
+        setHasUnsavedChanges(true);
+    };
 
     return (
-        <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm overflow-y-auto"
-            onClick={handleClose}
+        <Modal
+            isOpen={isOpen}
+            onClose={handleClose}
+            title="Bucket Settings"
+            subtitle={bucketName}
+            icon={icon}
+            iconGradient={ICON_GRADIENTS.purple}
+            footer={footer}
+            maxWidth="4xl"
         >
-            <div 
-                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 rounded-t-2xl flex items-center justify-between z-10">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h5 className="text-xl font-bold text-slate-800">Bucket Settings</h5>
-                            <p className="text-sm text-slate-500">{bucketName}</p>
-                        </div>
-                    </div>
-                    <button 
-                        type="button" 
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200"
-                        onClick={handleClose}
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div className="p-6 space-y-6">
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-                            <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div className="flex-1">
-                                <strong className="text-red-800 font-semibold">Error:</strong>
-                                <pre className="text-red-700 mt-1 text-sm whitespace-pre-wrap">{error}</pre>
-                            </div>
-                        </div>
-                    )}
+            <div className="space-y-6">
+                {error && <ErrorAlert message={error} />}
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Bucket Policy (JSON)</label>
-                        <textarea
-                            value={bucketPolicy}
-                            onChange={(e) => {
-                                setBucketPolicy(e.target.value);
-                                setHasUnsavedChanges(true);
-                            }}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
-                            style={{ height: '150px' }}
-                            placeholder="Enter bucket policy JSON..."
-                        ></textarea>
-                    </div>
+                <Textarea
+                    label="Bucket Policy (JSON)"
+                    value={bucketPolicy}
+                    onChange={handleChange(setBucketPolicy)}
+                    style={{ height: '150px' }}
+                    placeholder="Enter bucket policy JSON..."
+                />
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">CORS Rules (JSON)</label>
-                        <textarea
-                            value={corsRules}
-                            onChange={(e) => {
-                                setCorsRules(e.target.value);
-                                setHasUnsavedChanges(true);
-                            }}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
-                            style={{ height: '150px' }}
-                            placeholder="Enter CORS rules JSON..."
-                        ></textarea>
-                    </div>
+                <Textarea
+                    label="CORS Rules (JSON)"
+                    value={corsRules}
+                    onChange={handleChange(setCorsRules)}
+                    style={{ height: '150px' }}
+                    placeholder="Enter CORS rules JSON..."
+                />
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Static Website Hosting (JSON)</label>
-                        <textarea
-                            value={websiteConfig}
-                            onChange={(e) => {
-                                setWebsiteConfig(e.target.value);
-                                setHasUnsavedChanges(true);
-                            }}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
-                            style={{ height: '100px' }}
-                            placeholder="Enter website configuration JSON..."
-                        ></textarea>
-                    </div>
+                <Textarea
+                    label="Static Website Hosting (JSON)"
+                    value={websiteConfig}
+                    onChange={handleChange(setWebsiteConfig)}
+                    style={{ height: '100px' }}
+                    placeholder="Enter website configuration JSON..."
+                />
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Server Access Logging (JSON)</label>
-                        <textarea
-                            value={loggingConfig}
-                            onChange={(e) => {
-                                setLoggingConfig(e.target.value);
-                                setHasUnsavedChanges(true);
-                            }}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
-                            style={{ height: '100px' }}
-                            placeholder="Enter logging configuration JSON..."
-                        ></textarea>
-                    </div>
+                <Textarea
+                    label="Server Access Logging (JSON)"
+                    value={loggingConfig}
+                    onChange={handleChange(setLoggingConfig)}
+                    style={{ height: '100px' }}
+                    placeholder="Enter logging configuration JSON..."
+                />
 
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-slate-800 mb-3">Public Access Block Settings</h5>
-                        <div className="space-y-2">
-                            <label className="flex items-center space-x-3 cursor-pointer">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <h5 className="text-sm font-semibold text-slate-800 mb-3">Public Access Block Settings</h5>
+                    <div className="space-y-2">
+                        {[
+                            { id: 'blockPublicAcls', label: 'Block Public ACLs', checked: blockPublicAcls, onChange: setBlockPublicAcls },
+                            { id: 'ignorePublicAcls', label: 'Ignore Public ACLs', checked: ignorePublicAcls, onChange: setIgnorePublicAcls },
+                            { id: 'blockPublicPolicy', label: 'Block Public Policy', checked: blockPublicPolicy, onChange: setBlockPublicPolicy },
+                            { id: 'restrictPublicBuckets', label: 'Restrict Public Buckets', checked: restrictPublicBuckets, onChange: setRestrictPublicBuckets },
+                        ].map(({ id, label, checked, onChange }) => (
+                            <label key={id} className="flex items-center space-x-3 cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    id="blockPublicAcls"
-                                    checked={blockPublicAcls}
+                                    id={id}
+                                    checked={checked}
                                     onChange={(e) => {
-                                        setBlockPublicAcls(e.target.checked);
+                                        onChange(e.target.checked);
                                         setHasUnsavedChanges(true);
                                     }}
                                     className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
                                 />
-                                <span className="text-sm text-slate-700">Block Public ACLs</span>
+                                <span className="text-sm text-slate-700">{label}</span>
                             </label>
-                            <label className="flex items-center space-x-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    id="ignorePublicAcls"
-                                    checked={ignorePublicAcls}
-                                    onChange={(e) => {
-                                        setIgnorePublicAcls(e.target.checked);
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm text-slate-700">Ignore Public ACLs</span>
-                            </label>
-                            <label className="flex items-center space-x-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    id="blockPublicPolicy"
-                                    checked={blockPublicPolicy}
-                                    onChange={(e) => {
-                                        setBlockPublicPolicy(e.target.checked);
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm text-slate-700">Block Public Policy</span>
-                            </label>
-                            <label className="flex items-center space-x-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    id="restrictPublicBuckets"
-                                    checked={restrictPublicBuckets}
-                                    onChange={(e) => {
-                                        setRestrictPublicBuckets(e.target.checked);
-                                        setHasUnsavedChanges(true);
-                                    }}
-                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm text-slate-700">Restrict Public Buckets</span>
-                            </label>
-                        </div>
+                        ))}
                     </div>
-                </div>
-                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
-                    <button 
-                        onClick={handleClose} 
-                        className="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-white transition-colors duration-200"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleSave} 
-                        className={`px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${
-                            !hasUnsavedChanges ? 'opacity-50 cursor-not-allowed transform-none' : ''
-                        }`}
-                        disabled={!hasUnsavedChanges}
-                    >
-                        Save Changes
-                    </button>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 };
 
