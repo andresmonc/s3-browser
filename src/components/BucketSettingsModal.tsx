@@ -209,71 +209,110 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
     if (!isOpen) return null;
 
     return (
-        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={handleClose}>
-            <div className="modal-dialog modal-lg">
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <h5 className="modal-title">Bucket Settings: {bucketName}</h5>
-                        <button type="button" className="btn-close" aria-label="Close" onClick={handleClose}></button>
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm overflow-y-auto"
+            onClick={handleClose}
+        >
+            <div 
+                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 rounded-t-2xl flex items-center justify-between z-10">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h5 className="text-xl font-bold text-slate-800">Bucket Settings</h5>
+                            <p className="text-sm text-slate-500">{bucketName}</p>
+                        </div>
                     </div>
-                    <div className="modal-body">
-                        {error && (
-                            <div className="alert alert-danger" role="alert">
-                                <strong>Error:</strong> {error}
+                    <button 
+                        type="button" 
+                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200"
+                        onClick={handleClose}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="p-6 space-y-6">
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                            <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div className="flex-1">
+                                <strong className="text-red-800 font-semibold">Error:</strong>
+                                <pre className="text-red-700 mt-1 text-sm whitespace-pre-wrap">{error}</pre>
                             </div>
-                        )}
-
-                        <div className="mb-3">
-                            <label className="form-label">Bucket Policy (JSON)</label>
-                            <textarea
-                                value={bucketPolicy}
-                                onChange={(e) => {
-                                    setBucketPolicy(e.target.value);
-                                    setHasUnsavedChanges(true);
-                                }}
-                                className="form-control" style={{ height: '150px' }}
-                            ></textarea>
                         </div>
+                    )}
 
-                        <div className="mb-3">
-                            <label className="form-label">CORS Rules (JSON)</label>
-                            <textarea
-                                value={corsRules}
-                                onChange={(e) => {
-                                    setCorsRules(e.target.value);
-                                    setHasUnsavedChanges(true);
-                                }}
-                                className="form-control" style={{ height: '150px' }}
-                            ></textarea>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Bucket Policy (JSON)</label>
+                        <textarea
+                            value={bucketPolicy}
+                            onChange={(e) => {
+                                setBucketPolicy(e.target.value);
+                                setHasUnsavedChanges(true);
+                            }}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
+                            style={{ height: '150px' }}
+                            placeholder="Enter bucket policy JSON..."
+                        ></textarea>
+                    </div>
 
-                        <div className="mb-3">
-                            <label className="form-label">Static Website Hosting (JSON)</label>
-                            <textarea
-                                value={websiteConfig}
-                                onChange={(e) => {
-                                    setWebsiteConfig(e.target.value);
-                                    setHasUnsavedChanges(true);
-                                }}
-                                className="form-control" style={{ height: '100px' }}
-                            ></textarea>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">CORS Rules (JSON)</label>
+                        <textarea
+                            value={corsRules}
+                            onChange={(e) => {
+                                setCorsRules(e.target.value);
+                                setHasUnsavedChanges(true);
+                            }}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
+                            style={{ height: '150px' }}
+                            placeholder="Enter CORS rules JSON..."
+                        ></textarea>
+                    </div>
 
-                        <div className="mb-3">
-                            <label className="form-label">Server Access Logging (JSON)</label>
-                            <textarea
-                                value={loggingConfig}
-                                onChange={(e) => {
-                                    setLoggingConfig(e.target.value);
-                                    setHasUnsavedChanges(true);
-                                }}
-                                className="form-control" style={{ height: '100px' }}
-                            ></textarea>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Static Website Hosting (JSON)</label>
+                        <textarea
+                            value={websiteConfig}
+                            onChange={(e) => {
+                                setWebsiteConfig(e.target.value);
+                                setHasUnsavedChanges(true);
+                            }}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
+                            style={{ height: '100px' }}
+                            placeholder="Enter website configuration JSON..."
+                        ></textarea>
+                    </div>
 
-                        <div className="mb-3">
-                            <h5 className="mb-2">Public Access Block Settings</h5>
-                            <div className="form-check">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Server Access Logging (JSON)</label>
+                        <textarea
+                            value={loggingConfig}
+                            onChange={(e) => {
+                                setLoggingConfig(e.target.value);
+                                setHasUnsavedChanges(true);
+                            }}
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 font-mono text-sm"
+                            style={{ height: '100px' }}
+                            placeholder="Enter logging configuration JSON..."
+                        ></textarea>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <h5 className="text-sm font-semibold text-slate-800 mb-3">Public Access Block Settings</h5>
+                        <div className="space-y-2">
+                            <label className="flex items-center space-x-3 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     id="blockPublicAcls"
@@ -282,11 +321,11 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                                         setBlockPublicAcls(e.target.checked);
                                         setHasUnsavedChanges(true);
                                     }}
-                                    className="form-check-input"
+                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
                                 />
-                                <label className="form-check-label" htmlFor="blockPublicAcls">Block Public ACLs</label>
-                            </div>
-                            <div className="form-check">
+                                <span className="text-sm text-slate-700">Block Public ACLs</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     id="ignorePublicAcls"
@@ -295,11 +334,11 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                                         setIgnorePublicAcls(e.target.checked);
                                         setHasUnsavedChanges(true);
                                     }}
-                                    className="form-check-input"
+                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
                                 />
-                                <label className="form-check-label" htmlFor="ignorePublicAcls">Ignore Public ACLs</label>
-                            </div>
-                            <div className="form-check">
+                                <span className="text-sm text-slate-700">Ignore Public ACLs</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     id="blockPublicPolicy"
@@ -308,11 +347,11 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                                         setBlockPublicPolicy(e.target.checked);
                                         setHasUnsavedChanges(true);
                                     }}
-                                    className="form-check-input"
+                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
                                 />
-                                <label className="form-check-label" htmlFor="blockPublicPolicy">Block Public Policy</label>
-                            </div>
-                            <div className="form-check">
+                                <span className="text-sm text-slate-700">Block Public Policy</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     id="restrictPublicBuckets"
@@ -321,20 +360,29 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                                         setRestrictPublicBuckets(e.target.checked);
                                         setHasUnsavedChanges(true);
                                     }}
-                                    className="form-check-input"
+                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
                                 />
-                                <label className="form-check-label" htmlFor="restrictPublicBuckets">Restrict Public Buckets</label>
-                            </div>
+                                <span className="text-sm text-slate-700">Restrict Public Buckets</span>
+                            </label>
                         </div>
                     </div>
-                    <div className="modal-footer">
-                        <button onClick={handleClose} className="btn btn-secondary me-2">
-                            Cancel
-                        </button>
-                        <button onClick={handleSave} className={`btn btn-primary ${!hasUnsavedChanges ? 'disabled' : ''}`}>
-                            Save
-                        </button>
-                    </div>
+                </div>
+                <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
+                    <button 
+                        onClick={handleClose} 
+                        className="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-white transition-colors duration-200"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSave} 
+                        className={`px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${
+                            !hasUnsavedChanges ? 'opacity-50 cursor-not-allowed transform-none' : ''
+                        }`}
+                        disabled={!hasUnsavedChanges}
+                    >
+                        Save Changes
+                    </button>
                 </div>
             </div>
         </div>
