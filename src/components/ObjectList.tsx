@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getS3Client } from '../s3-client';
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, _Object } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
-import FileUploader from './FileUploader';
+import { useDropzone } from 'react-dropzone';
+import { Upload } from '@aws-sdk/lib-storage';
 import Button from './ui/Button';
 import ObjectPreviewModal from './ObjectPreviewModal';
 import ObjectDetailsModal from './ObjectDetailsModal';
@@ -15,6 +16,11 @@ interface ObjectListProps {
     selectedBucket: string | null;
 }
 
+interface UploadProgress {
+    file: File;
+    progress: number;
+}
+
 const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     const [objects, setObjects] = useState<_Object[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,11 +31,60 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     const [detailsObject, setDetailsObject] = useState<string | null>(null);
     const [copyObject, setCopyObject] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<'all' | 'images' | 'documents' | 'videos'>('all');
+    const [uploads, setUploads] = useState<UploadProgress[]>([]);
     const { showSuccess, showError, showInfo } = useToast();
 
     const forceRefresh = () => {
         setRefresh(!refresh);
         setSelectedObjects(new Set());
+    };
+
+    const handleFileUpload = useCallback(async (acceptedFiles: File[]) => {
+        const client = getS3Client();
+        if (!selectedBucket || !client) return;
+
+        const newUploads = acceptedFiles.map(file => ({ file, progress: 0 }));
+        setUploads(prev => [...prev, ...newUploads]);
+
+        for (let i = 0; i < acceptedFiles.length; i++) {
+            const file = acceptedFiles[i];
+            try {
+                // Use currentPath as prefix for uploaded files
+                const key = currentPath ? `${currentPath}${file.name}` : file.name;
+                
+                const upload = new Upload({
+                    client: client,
+                    params: {
+                        Bucket: selectedBucket,
+                        Key: key,
+                        Body: file,
+                    },
+                });
+
+                upload.on("httpUploadProgress", (progress) => {
+                    const percent = Math.round(((progress.loaded || 0) / (progress.total || 1)) * 100);
+                    setUploads(prev => prev.map(u => u.file === file ? { ...u, progress: percent } : u));
+                });
+
+                await upload.done();
+                showSuccess(`"${file.name}" uploaded successfully!`);
+
+            } catch (error: any) {
+                showError(`Failed to upload "${file.name}": ${error.message || 'Unknown error'}`);
+            }
+        }
+        forceRefresh();
+        // Clear completed uploads after a delay
+        setTimeout(() => setUploads([]), 3000);
+    }, [selectedBucket, currentPath, showSuccess, showError]);
+
+    const { getRootProps, getInputProps, isDragActive, open } = useDropzone({ 
+        onDrop: handleFileUpload,
+        noClick: true // Handle clicks manually via button and empty state
+    });
+
+    const handleUploadButtonClick = () => {
+        open();
     };
 
     useEffect(() => {
@@ -191,24 +246,72 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
         );
     }
 
+    const isEmpty = filteredObjects.length === 0 && folders.length === 0 && !searchTerm;
+
     return (
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 h-full flex flex-col overflow-hidden">
+        <div 
+            {...getRootProps()} 
+            className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 h-full flex flex-col overflow-hidden ${
+                isDragActive ? 'ring-4 ring-blue-500 ring-opacity-50' : ''
+            }`}
+        >
+            <input {...getInputProps()} />
             <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50">
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Objects</h2>
                         <p className="text-sm text-slate-600 font-medium">Bucket: <span className="font-bold text-slate-800 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">{selectedBucket}</span></p>
                     </div>
-                    <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md">
-                        <span className="text-sm font-bold text-slate-700">
-                            {filteredObjects.length} <span className="text-slate-500 font-normal">{filteredObjects.length === 1 ? 'object' : 'objects'}</span>
-                        </span>
+                    <div className="flex items-center space-x-4">
+                        <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md">
+                            <span className="text-sm font-bold text-slate-700">
+                                {filteredObjects.length} <span className="text-slate-500 font-normal">{filteredObjects.length === 1 ? 'object' : 'objects'}</span>
+                            </span>
+                        </div>
+                        <Button 
+                            onClick={handleUploadButtonClick}
+                            variant="primary"
+                            className="flex items-center space-x-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span>Upload Files</span>
+                        </Button>
                     </div>
                 </div>
                 <BucketStats bucketName={selectedBucket} />
-                <div className="mt-6">
-                    <FileUploader selectedBucket={selectedBucket} onUploadSuccess={forceRefresh} />
-                </div>
+                {uploads.length > 0 && (
+                    <div className="mt-6 space-y-3">
+                        <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Uploading:</span>
+                        </h4>
+                        {uploads.map((upload, index) => (
+                            <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-200 shadow-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span className="text-sm font-bold text-slate-700 truncate">{upload.file.name}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-blue-600 bg-white px-2 py-1 rounded-lg ml-2">{upload.progress}%</span>
+                                </div>
+                                <div className="w-full bg-white rounded-full h-3 overflow-hidden shadow-inner">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                                        style={{ width: `${upload.progress}%` }}
+                                    >
+                                        <div className="absolute inset-0 animate-shimmer"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             
             <div className="p-8 flex-1 overflow-auto">
@@ -294,15 +397,57 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                     </div>
                 )}
                 
-                {filteredObjects.length === 0 ? (
+                {isEmpty ? (
+                    <div 
+                        onClick={handleUploadButtonClick}
+                        className={`text-center py-16 rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
+                            isDragActive 
+                                ? 'border-blue-500 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 scale-[1.02] shadow-2xl' 
+                                : 'border-slate-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/30 hover:to-purple-50/30'
+                        }`}
+                    >
+                        <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 transform ${
+                            isDragActive 
+                                ? 'bg-gradient-to-br from-blue-500 to-purple-600 scale-110 rotate-12 shadow-lg' 
+                                : 'bg-gradient-to-br from-blue-100 to-purple-100 animate-float'
+                        }`}>
+                            <svg className={`w-12 h-12 transition-all duration-300 ${isDragActive ? 'text-white' : 'text-blue-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        {isDragActive ? (
+                            <>
+                                <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">Drop the files here...</p>
+                                <p className="text-sm text-blue-500 font-medium">Release to upload</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-lg font-bold text-slate-600 mb-2">This folder is empty</p>
+                                <p className="text-sm text-slate-500 mb-4">Drag & drop files here to upload, or click below to select files</p>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUploadButtonClick();
+                                    }}
+                                    className="mt-4 inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    <span>Select Files</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                ) : filteredObjects.length === 0 ? (
                     <div className="text-center py-16">
                         <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-float">
                             <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <p className="text-lg font-bold text-slate-600 mb-2">{searchTerm ? 'No objects found' : 'No objects in this folder'}</p>
-                        {!searchTerm && <p className="text-sm text-slate-400">Upload files to get started</p>}
+                        <p className="text-lg font-bold text-slate-600 mb-2">No objects found</p>
+                        <p className="text-sm text-slate-400">Try adjusting your search or filter</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-xl border border-slate-200/50 bg-white/50 backdrop-blur-sm">
