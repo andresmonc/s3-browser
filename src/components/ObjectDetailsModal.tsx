@@ -5,6 +5,7 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { ICON_GRADIENTS } from '../utils/constants';
 import prettyBytes from 'pretty-bytes';
+import { useToast } from '../hooks/useToast';
 
 interface ObjectDetailsModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
     const [metadata, setMetadata] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (!isOpen || !bucketName || !objectKey) return;
@@ -26,7 +28,9 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
             setError(null);
             const client = getS3Client();
             if (!client) {
-                setError('S3 client not configured');
+                const errorMsg = 'S3 client not configured';
+                setError(errorMsg);
+                showErrorToast(errorMsg);
                 setLoading(false);
                 return;
             }
@@ -36,7 +40,9 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
                 const response = await client.send(command);
                 setMetadata(response);
             } catch (err: any) {
-                setError(`Error loading metadata: ${err.message}`);
+                const errorMsg = `Error loading metadata: ${err.message}`;
+                setError(errorMsg);
+                showErrorToast(errorMsg);
             } finally {
                 setLoading(false);
             }

@@ -7,6 +7,7 @@ import { Input } from './ui/Input';
 import ErrorAlert from './ui/ErrorAlert';
 import ProgressBar from './ui/ProgressBar';
 import { BUCKET_NAME_REGEX, ICON_GRADIENTS } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
 
 interface RenameBucketModalProps {
     oldBucketName: string;
@@ -21,6 +22,7 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const { showSuccess, showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (isOpen) {
@@ -117,10 +119,13 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
             await client.send(new DeleteBucketCommand({ Bucket: oldBucketName }));
 
             setStatus('Rename successful!');
+            showSuccess(`Bucket renamed from "${oldBucketName}" to "${newBucketName}" successfully!`);
             onRenameSuccess();
             onClose();
         } catch (e: any) {
-            setError(`Error during rename: ${e.message}`);
+            const errorMsg = `Error during rename: ${e.message}`;
+            setError(errorMsg);
+            showErrorToast(errorMsg);
         } finally {
             setIsRenaming(false);
         }

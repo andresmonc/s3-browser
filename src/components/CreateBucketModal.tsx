@@ -5,6 +5,7 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Input } from './ui/Input';
 import { BUCKET_NAME_REGEX, ICON_GRADIENTS } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
 
 interface CreateBucketModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
     const [bucketName, setBucketName] = useState('');
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showSuccess, showError } = useToast();
 
     useEffect(() => {
         if (!isOpen) {
@@ -44,14 +46,17 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
             if ((error as any).name === 'NotFound') {
                 try {
                     await client.send(new CreateBucketCommand({ Bucket: bucketName }));
+                    showSuccess(`Bucket "${bucketName}" created successfully!`);
                     onCreate(bucketName);
                 } catch (createError) {
-                    console.error('Error creating bucket:', createError);
-                    setError(`Error creating bucket: ${(createError as any).message}`);
+                    const errorMsg = `Error creating bucket: ${(createError as any).message}`;
+                    setError(errorMsg);
+                    showError(errorMsg);
                 }
             } else {
-                console.error('Error checking bucket name:', error);
-                setError(`Error checking bucket name: ${(error as any).message}`);
+                const errorMsg = `Error checking bucket name: ${(error as any).message}`;
+                setError(errorMsg);
+                showError(errorMsg);
             }
         }
         setCreating(false);

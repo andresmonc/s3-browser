@@ -4,6 +4,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { ICON_GRADIENTS } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
 
 interface ObjectPreviewModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [contentType, setContentType] = useState<string>('');
+    const { showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (!isOpen || !bucketName || !objectKey) return;
@@ -27,7 +29,9 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
             setError(null);
             const client = getS3Client();
             if (!client) {
-                setError('S3 client not configured');
+                const errorMsg = 'S3 client not configured';
+                setError(errorMsg);
+                showErrorToast(errorMsg);
                 setLoading(false);
                 return;
             }
@@ -51,7 +55,9 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
                     setError('Preview not available for this file type');
                 }
             } catch (err: any) {
-                setError(`Error loading preview: ${err.message}`);
+                const errorMsg = `Error loading preview: ${err.message}`;
+                setError(errorMsg);
+                showErrorToast(errorMsg);
             } finally {
                 setLoading(false);
             }

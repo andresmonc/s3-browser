@@ -6,6 +6,7 @@ import Button from './ui/Button';
 import { Textarea } from './ui/Input';
 import ErrorAlert from './ui/ErrorAlert';
 import { ICON_GRADIENTS } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
 
 
 interface BucketSettingsModalProps {
@@ -25,6 +26,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
     const [restrictPublicBuckets, setRestrictPublicBuckets] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const { showSuccess, showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -204,9 +206,12 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         }
 
         if (errors.length > 0) {
-            setError(errors.join('\n'));
+            const errorMsg = errors.join('\n');
+            setError(errorMsg);
+            showErrorToast(errorMsg);
         } else {
             setHasUnsavedChanges(false);
+            showSuccess('Bucket settings saved successfully!');
             onClose();
         }
     };

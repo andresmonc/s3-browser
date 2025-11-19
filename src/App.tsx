@@ -4,11 +4,13 @@ import ObjectList from './components/ObjectList';
 import SettingsModal from './components/SettingsModal';
 import { getS3Client, refreshS3Client } from './s3-client';
 import type { S3Client } from '@aws-sdk/client-s3';
+import { useToast } from './hooks/useToast';
 
 function App() {
     const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
     const [s3Client, setS3Client] = useState<S3Client | null>(getS3Client());
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const { showSuccess } = useToast();
 
     useEffect(() => {
         // Check if credentials exist on mount
@@ -23,6 +25,9 @@ function App() {
         const client = refreshS3Client();
         setS3Client(client);
         setIsSettingsOpen(false);
+        if (client) {
+            showSuccess('S3 connection established successfully!');
+        }
     };
 
     if (!s3Client) {

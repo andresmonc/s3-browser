@@ -6,6 +6,7 @@ import Button from './ui/Button';
 import { Input } from './ui/Input';
 import ErrorAlert from './ui/ErrorAlert';
 import { ICON_GRADIENTS } from '../utils/constants';
+import { useToast } from '../hooks/useToast';
 
 interface CopyObjectModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ const CopyObjectModal = ({ isOpen, onClose, sourceBucket, sourceKey, onCopySucce
     const [buckets, setBuckets] = useState<string[]>([]);
     const [copying, setCopying] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showSuccess, showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (isOpen) {
@@ -68,10 +70,13 @@ const CopyObjectModal = ({ isOpen, onClose, sourceBucket, sourceKey, onCopySucce
                 Bucket: targetBucket,
                 Key: targetKey,
             }));
+            showSuccess(`Object copied to "${targetBucket}/${targetKey}" successfully!`);
             onCopySuccess();
             onClose();
         } catch (err: any) {
-            setError(`Error copying object: ${err.message}`);
+            const errorMsg = `Error copying object: ${err.message}`;
+            setError(errorMsg);
+            showErrorToast(errorMsg);
         } finally {
             setCopying(false);
         }

@@ -5,6 +5,7 @@ import CreateBucketModal from './CreateBucketModal';
 import BucketSettingsModal from './BucketSettingsModal';
 import RenameBucketModal from './RenameBucketModal';
 import Button from './ui/Button';
+import { useToast } from '../hooks/useToast';
 
 interface BucketListProps {
     selectedBucket: string | null;
@@ -19,6 +20,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     const [selectedBucketToRename, setSelectedBucketToRename] = useState<string | null>(null);
     const [selectedBucketForSettings, setSelectedBucketForSettings] = useState<string | null>(null);
     const [refresh, setRefresh] = useState(false);
+    const { showSuccess, showError } = useToast();
 
     const handleRenameBucket = (bucketName: string) => {
         setSelectedBucketToRename(bucketName);
@@ -32,8 +34,8 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
             try {
                 const response = await client.send(new ListBucketsCommand({}));
                 setBuckets(response.Buckets?.map(bucket => bucket.Name || '').filter(Boolean) || []);
-            } catch (error) {
-                console.error('Error fetching buckets:', error);
+            } catch (error: any) {
+                showError(`Failed to load buckets: ${error.message || 'Unknown error'}`);
             }
         };
 
@@ -47,8 +49,9 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
             await client.send(new CreateBucketCommand({ Bucket: bucketName }));
             setIsModalOpen(false);
             setRefresh(!refresh);
-        } catch (error) {
-            console.error('Error creating bucket:', error);
+            showSuccess(`Bucket "${bucketName}" created successfully!`);
+        } catch (error: any) {
+            showError(`Failed to create bucket: ${error.message || 'Unknown error'}`);
         }
     };
 
@@ -62,8 +65,9 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                 if (selectedBucket === bucketName) {
                     onSelectBucket(null);
                 }
-            } catch (error) {
-                console.error('Error deleting bucket:', error);
+                showSuccess(`Bucket "${bucketName}" deleted successfully!`);
+            } catch (error: any) {
+                showError(`Failed to delete bucket: ${error.message || 'Unknown error'}`);
             }
         }
     };

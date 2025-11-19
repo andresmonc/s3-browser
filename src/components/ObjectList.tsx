@@ -9,6 +9,7 @@ import ObjectDetailsModal from './ObjectDetailsModal';
 import CopyObjectModal from './CopyObjectModal';
 import Breadcrumbs from './Breadcrumbs';
 import BucketStats from './BucketStats';
+import { useToast } from '../hooks/useToast';
 
 interface ObjectListProps {
     selectedBucket: string | null;
@@ -24,6 +25,7 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     const [detailsObject, setDetailsObject] = useState<string | null>(null);
     const [copyObject, setCopyObject] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<'all' | 'images' | 'documents' | 'videos'>('all');
+    const { showSuccess, showError, showInfo } = useToast();
 
     const forceRefresh = () => {
         setRefresh(!refresh);
@@ -50,8 +52,8 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                     ...(response.Contents || [])
                 ];
                 setObjects(allItems);
-            } catch (error) {
-                console.error('Error fetching objects:', error);
+            } catch (error: any) {
+                showError(`Failed to load objects: ${error.message || 'Unknown error'}`);
             }
         };
 
@@ -66,8 +68,9 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
             try {
                 await client.send(new DeleteObjectCommand({ Bucket: selectedBucket, Key: key }));
                 forceRefresh();
-            } catch (error) {
-                console.error('Error deleting object:', error);
+                showSuccess(`Object "${key.split('/').pop()}" deleted successfully!`);
+            } catch (error: any) {
+                showError(`Failed to delete object: ${error.message || 'Unknown error'}`);
             }
         }
     };
@@ -88,9 +91,9 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                     }
                 }));
                 forceRefresh();
-            } catch (error) {
-                console.error('Error deleting objects:', error);
-                alert('Error deleting some objects');
+                showSuccess(`Successfully deleted ${selectedObjects.size} object(s)!`);
+            } catch (error: any) {
+                showError(`Failed to delete objects: ${error.message || 'Unknown error'}`);
             }
         }
     };
@@ -135,6 +138,7 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
         if (!selectedBucket || !client) return;
 
         try {
+            showInfo(`Downloading "${key.split('/').pop()}"...`);
             const command = new GetObjectCommand({ Bucket: selectedBucket, Key: key });
             const response = await client.send(command);
             const body = response.Body;
@@ -148,9 +152,10 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                 document.body.appendChild(link);
                 link.click();
                 link.parentNode?.removeChild(link);
+                showSuccess(`"${key.split('/').pop()}" downloaded successfully!`);
             }
-        } catch (error) {
-            console.error('Error downloading object:', error);
+        } catch (error: any) {
+            showError(`Failed to download object: ${error.message || 'Unknown error'}`);
         }
     };
 

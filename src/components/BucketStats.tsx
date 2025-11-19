@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getS3Client } from '../s3-client';
 import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
+import { useToast } from '../hooks/useToast';
 
 interface BucketStatsProps {
     bucketName: string;
@@ -26,6 +27,7 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
         other: 0
     });
     const [loading, setLoading] = useState(true);
+    const { showError } = useToast();
 
     useEffect(() => {
         const loadStats = async () => {
@@ -68,8 +70,8 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
                     videos,
                     other
                 });
-            } catch (error) {
-                console.error('Error loading stats:', error);
+            } catch (error: any) {
+                showError(`Failed to load bucket statistics: ${error.message || 'Unknown error'}`);
             } finally {
                 setLoading(false);
             }

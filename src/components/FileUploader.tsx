@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { getS3Client } from '../s3-client';
 import { Upload } from '@aws-sdk/lib-storage';
+import { useToast } from '../hooks/useToast';
 
 interface FileUploaderProps {
     selectedBucket: string | null;
@@ -15,6 +16,7 @@ interface UploadProgress {
 
 const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) => {
     const [uploads, setUploads] = useState<UploadProgress[]>([]);
+    const { showSuccess, showError } = useToast();
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const client = getS3Client();
@@ -41,9 +43,10 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
                 });
 
                 await upload.done();
+                showSuccess(`"${file.name}" uploaded successfully!`);
 
-            } catch (error) {
-                console.error(`Error uploading ${file.name}:`, error);
+            } catch (error: any) {
+                showError(`Failed to upload "${file.name}": ${error.message || 'Unknown error'}`);
             }
         }
         onUploadSuccess();

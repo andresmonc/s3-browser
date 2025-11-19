@@ -47,6 +47,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     const [secretAccessKey, setSecretAccessKey] = useState('');
     const [showSecret, setShowSecret] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showSuccess, showError: showErrorToast } = useToast();
 
     useEffect(() => {
         if (isOpen) {
@@ -81,6 +82,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
         };
 
         saveCredentialsToStorage(credentials);
+        showSuccess('S3 configuration saved successfully!');
         onSave(credentials);
         onClose();
     };
