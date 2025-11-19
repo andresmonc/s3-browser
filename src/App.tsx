@@ -74,7 +74,7 @@ function App() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col relative overflow-hidden">
+        <div className="h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col relative overflow-hidden">
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -82,7 +82,7 @@ function App() {
             </div>
             
             {/* Header */}
-            <header className="relative bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg">
+            <header className="relative bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg flex-shrink-0">
                 <div className="flex items-center justify-between px-8 py-5">
                     <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300">
@@ -110,13 +110,13 @@ function App() {
             </header>
 
             {/* Main Content */}
-            <div className="flex flex-1 overflow-hidden relative z-10">
-                <aside className="w-80 bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-xl overflow-y-auto">
+            <div className="flex flex-1 min-h-0 relative z-10">
+                <aside className="w-80 h-full bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-xl overflow-y-auto flex-shrink-0">
                     <div className="p-6">
                         <BucketList selectedBucket={selectedBucket} onSelectBucket={setSelectedBucket} />
                     </div>
                 </aside>
-                <main className="flex-1 overflow-y-auto p-8">
+                <main className="flex-1 h-full overflow-y-auto p-8 min-w-0">
                     <ObjectList selectedBucket={selectedBucket} />
                 </main>
             </div>
