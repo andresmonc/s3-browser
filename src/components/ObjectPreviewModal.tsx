@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
@@ -20,6 +20,7 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
     const [error, setError] = useState<string | null>(null);
     const [contentType, setContentType] = useState<string>('');
     const { showError: showErrorToast } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         if (!isOpen || !bucketName || !objectKey) return;
@@ -27,8 +28,8 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
         const loadPreview = async () => {
             setLoading(true);
             setError(null);
-            const client = getS3Client();
-            if (!client) {
+            
+            if (!s3Client) {
                 const errorMsg = 'S3 client not configured';
                 setError(errorMsg);
                 showErrorToast(errorMsg);
@@ -38,7 +39,7 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
 
             try {
                 const command = new GetObjectCommand({ Bucket: bucketName, Key: objectKey });
-                const response = await client.send(command);
+                const response = await s3Client.send(command);
                 const detectedContentType = response.ContentType || '';
                 setContentType(detectedContentType);
 
@@ -70,7 +71,7 @@ const ObjectPreviewModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectPr
                 URL.revokeObjectURL(objectUrl);
             }
         };
-    }, [isOpen, bucketName, objectKey]);
+    }, [isOpen, bucketName, objectKey, s3Client, showErrorToast]);
 
     const icon = (
         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

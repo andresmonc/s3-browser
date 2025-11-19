@@ -19,6 +19,7 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { showError: showErrorToast } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         if (!isOpen || !bucketName || !objectKey) return;
@@ -26,8 +27,8 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
         const loadMetadata = async () => {
             setLoading(true);
             setError(null);
-            const client = getS3Client();
-            if (!client) {
+            
+            if (!s3Client) {
                 const errorMsg = 'S3 client not configured';
                 setError(errorMsg);
                 showErrorToast(errorMsg);
@@ -37,7 +38,7 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
 
             try {
                 const command = new HeadObjectCommand({ Bucket: bucketName, Key: objectKey });
-                const response = await client.send(command);
+                const response = await s3Client.send(command);
                 setMetadata(response);
             } catch (err: any) {
                 const errorMsg = `Error loading metadata: ${err.message}`;
@@ -49,7 +50,7 @@ const ObjectDetailsModal = ({ isOpen, onClose, bucketName, objectKey }: ObjectDe
         };
 
         loadMetadata();
-    }, [isOpen, bucketName, objectKey]);
+    }, [isOpen, bucketName, objectKey, s3Client, showErrorToast]);
 
     const icon = (
         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
