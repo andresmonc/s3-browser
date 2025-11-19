@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { Upload } from '@aws-sdk/lib-storage';
 import { useToast } from '../hooks/useToast';
 
@@ -17,10 +17,10 @@ interface UploadProgress {
 const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) => {
     const [uploads, setUploads] = useState<UploadProgress[]>([]);
     const { showSuccess, showError } = useToast();
+    const s3Client = useS3Client();
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        const client = getS3Client();
-        if (!selectedBucket || !client) return;
+        if (!selectedBucket || !s3Client) return;
 
         const newUploads = acceptedFiles.map(file => ({ file, progress: 0 }));
         setUploads(prev => [...prev, ...newUploads]);
@@ -29,7 +29,7 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
             const file = acceptedFiles[i];
             try {
                 const upload = new Upload({
-                    client: client,
+                    client: s3Client,
                     params: {
                         Bucket: selectedBucket,
                         Key: file.name,
@@ -53,7 +53,7 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
         // Clear completed uploads after a delay
         setTimeout(() => setUploads([]), 3000);
 
-    }, [selectedBucket, onUploadSuccess]);
+    }, [selectedBucket, onUploadSuccess, s3Client, showSuccess, showError]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 

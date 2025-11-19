@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { GetBucketVersioningCommand, GetBucketLifecycleConfigurationCommand, GetBucketEncryptionCommand } from '@aws-sdk/client-s3';
 import { useToast } from '../hooks/useToast';
 
@@ -11,20 +11,20 @@ const BucketManagement = ({ bucketName }: BucketManagementProps) => {
     const [management, setManagement] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const { showError } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         const loadManagement = async () => {
-            const client = getS3Client();
-            if (!client || !bucketName) {
+            if (!s3Client || !bucketName) {
                 setLoading(false);
                 return;
             }
 
             try {
                 const [versioning, lifecycle, encryption] = await Promise.all([
-                    client.send(new GetBucketVersioningCommand({ Bucket: bucketName })).catch(() => ({ Status: 'Disabled' })),
-                    client.send(new GetBucketLifecycleConfigurationCommand({ Bucket: bucketName })).catch(() => null),
-                    client.send(new GetBucketEncryptionCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new GetBucketVersioningCommand({ Bucket: bucketName })).catch(() => ({ Status: 'Disabled' })),
+                    s3Client.send(new GetBucketLifecycleConfigurationCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new GetBucketEncryptionCommand({ Bucket: bucketName })).catch(() => null),
                 ]);
 
                 setManagement({
@@ -40,7 +40,7 @@ const BucketManagement = ({ bucketName }: BucketManagementProps) => {
         };
 
         loadManagement();
-    }, [bucketName]);
+    }, [bucketName, s3Client, showError]);
 
     if (loading) {
         return (

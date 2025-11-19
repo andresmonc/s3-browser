@@ -51,7 +51,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     };
 
     const handleDeleteBucket = async (bucketName: string) => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!client) return;
         if (window.confirm(`Are you sure you want to delete bucket "${bucketName}"?`)) {
             try {
@@ -65,7 +65,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                 showError(`Failed to delete bucket: ${error.message || 'Unknown error'}`);
             }
         }
-    };
+    }, [credentials, selectedBucket, onSelectBucket, showSuccess, showError]);
 
     return (
         <div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { CopyObjectCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
@@ -23,6 +23,7 @@ const CopyObjectModal = ({ isOpen, onClose, sourceBucket, sourceKey, onCopySucce
     const [copying, setCopying] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { showSuccess, showError: showErrorToast } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         if (isOpen) {
@@ -31,13 +32,12 @@ const CopyObjectModal = ({ isOpen, onClose, sourceBucket, sourceKey, onCopySucce
             setError(null);
             loadBuckets();
         }
-    }, [isOpen, sourceBucket, sourceKey]);
+    }, [isOpen, sourceBucket, sourceKey, s3Client]);
 
     const loadBuckets = async () => {
-        const client = getS3Client();
-        if (!client) return;
+        if (!s3Client) return;
         try {
-            const response = await client.send(new ListBucketsCommand({}));
+            const response = await s3Client.send(new ListBucketsCommand({}));
             setBuckets(response.Buckets?.map(b => b.Name || '').filter(Boolean) || []);
         } catch (err) {
             console.error('Error loading buckets:', err);
@@ -57,15 +57,15 @@ const CopyObjectModal = ({ isOpen, onClose, sourceBucket, sourceKey, onCopySucce
 
         setError(null);
         setCopying(true);
-        const client = getS3Client();
-        if (!client) {
+        
+        if (!s3Client) {
             setError('S3 client not configured');
             setCopying(false);
             return;
         }
 
         try {
-            await client.send(new CopyObjectCommand({
+            await s3Client.send(new CopyObjectCommand({
                 CopySource: `/${sourceBucket}/${sourceKey}`,
                 Bucket: targetBucket,
                 Key: targetKey,

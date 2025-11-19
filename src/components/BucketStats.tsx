@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
 import { useToast } from '../hooks/useToast';
@@ -28,11 +28,11 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
     });
     const [loading, setLoading] = useState(true);
     const { showError } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         const loadStats = async () => {
-            const client = getS3Client();
-            if (!client || !bucketName) {
+            if (!s3Client || !bucketName) {
                 setLoading(false);
                 return;
             }
@@ -43,7 +43,7 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
                 let isTruncated = true;
 
                 while (isTruncated) {
-                    const response = await client.send(new ListObjectsV2Command({
+                    const response = await s3Client.send(new ListObjectsV2Command({
                         Bucket: bucketName,
                         ContinuationToken: continuationToken
                     }));
@@ -78,7 +78,7 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
         };
 
         loadStats();
-    }, [bucketName]);
+    }, [bucketName, s3Client, showError]);
 
     if (loading) {
         return (

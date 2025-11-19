@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { CreateBucketCommand, DeleteBucketCommand, ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
@@ -23,6 +23,7 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
     const [status, setStatus] = useState('');
     const [error, setError] = useState<string | null>(null);
     const { showSuccess, showError: showErrorToast } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         if (isOpen) {
@@ -35,8 +36,7 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
     }, [isOpen]);
 
     const handleRename = async () => {
-        const client = getS3Client();
-        if (!client) return;
+        if (!s3Client) return;
         setError(null);
 
         if (!newBucketName) {
@@ -59,9 +59,9 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
 
         try {
             // Check if new bucket name already exists
-            await client.send(new CreateBucketCommand({ Bucket: newBucketName }));
+            await s3Client.send(new CreateBucketCommand({ Bucket: newBucketName }));
             // If it doesn't throw, it means it was created, so we delete it to proceed with copy
-            await client.send(new DeleteBucketCommand({ Bucket: newBucketName }));
+            await s3Client.send(new DeleteBucketCommand({ Bucket: newBucketName }));
         } catch (e: any) {
             if (e.name === 'BucketAlreadyOwnedByYou' || e.name === 'BucketAlreadyExists') {
                 setError('New bucket name already exists.');
@@ -79,7 +79,7 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
             let continuationToken: string | undefined = undefined;
 
             while (isTruncated) {
-                const listedObjects = await client.send(new ListObjectsV2Command({ Bucket: oldBucketName, ContinuationToken: continuationToken }));
+                const listedObjects = await s3Client.send(new ListObjectsV2Command({ Bucket: oldBucketName, ContinuationToken: continuationToken }));
                 if (listedObjects.Contents) {
                     allObjects = allObjects.concat(listedObjects.Contents);
                 }
@@ -89,13 +89,13 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
 
             if (allObjects.length === 0) {
                 setStatus('Old bucket is empty. Creating new bucket...');
-                await client.send(new CreateBucketCommand({ Bucket: newBucketName }));
+                await s3Client.send(new CreateBucketCommand({ Bucket: newBucketName }));
             } else {
                 setStatus(`Copying ${allObjects.length} objects to new bucket...`);
                 let copiedCount = 0;
                 for (const obj of allObjects) {
                     if (obj.Key) {
-                        await client.send(new CopyObjectCommand({
+                        await s3Client.send(new CopyObjectCommand({
                             CopySource: `/${oldBucketName}/${obj.Key}`,
                             Bucket: newBucketName,
                             Key: obj.Key,
@@ -112,11 +112,11 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
                         Objects: allObjects.map(({ Key }) => ({ Key }))
                     }
                 };
-                await client.send(new DeleteObjectsCommand(deleteParams));
+                await s3Client.send(new DeleteObjectsCommand(deleteParams));
             }
 
             setStatus('Deleting old bucket...');
-            await client.send(new DeleteBucketCommand({ Bucket: oldBucketName }));
+            await s3Client.send(new DeleteBucketCommand({ Bucket: oldBucketName }));
 
             setStatus('Rename successful!');
             showSuccess(`Bucket renamed from "${oldBucketName}" to "${newBucketName}" successfully!`);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { useToast } from '../hooks/useToast';
 
 interface BucketAccessPointsProps {
@@ -11,11 +11,11 @@ const BucketAccessPoints = ({ bucketName }: BucketAccessPointsProps) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { showError } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         const loadAccessPoints = async () => {
-            const client = getS3Client();
-            if (!client || !bucketName) {
+            if (!s3Client || !bucketName) {
                 setLoading(false);
                 return;
             }
@@ -35,7 +35,7 @@ const BucketAccessPoints = ({ bucketName }: BucketAccessPointsProps) => {
         };
 
         loadAccessPoints();
-    }, [bucketName]);
+    }, [bucketName, s3Client, showError]);
 
     if (loading) {
         return (

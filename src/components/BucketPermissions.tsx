@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { GetBucketAclCommand, GetBucketPolicyCommand, PutBucketPolicyCommand, DeleteBucketPolicyCommand } from '@aws-sdk/client-s3';
 import { useToast } from '../hooks/useToast';
 import Button from './ui/Button';
@@ -16,19 +16,19 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
     const [policyText, setPolicyText] = useState('');
     const [saving, setSaving] = useState(false);
     const { showError, showSuccess } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         const loadPermissions = async () => {
-            const client = getS3Client();
-            if (!client || !bucketName) {
+            if (!s3Client || !bucketName) {
                 setLoading(false);
                 return;
             }
 
             try {
                 const [acl, policy] = await Promise.all([
-                    client.send(new GetBucketAclCommand({ Bucket: bucketName })).catch(() => null),
-                    client.send(new GetBucketPolicyCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new GetBucketAclCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new GetBucketPolicyCommand({ Bucket: bucketName })).catch(() => null),
                 ]);
 
                 const policyJson = policy?.Policy ? JSON.parse(policy.Policy) : null;
@@ -48,7 +48,7 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
         };
 
         loadPermissions();
-    }, [bucketName]);
+    }, [bucketName, s3Client, showError]);
 
     const validateJSON = (text: string): { valid: boolean; error?: string } => {
         if (!text.trim()) {
@@ -81,8 +81,7 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
     };
 
     const handleSavePolicy = async () => {
-        const client = getS3Client();
-        if (!client || !bucketName) return;
+        if (!s3Client || !bucketName) return;
 
         // Validate JSON before attempting to save
         const validation = validateJSON(policyText);
@@ -95,20 +94,20 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
         try {
             if (policyText.trim()) {
                 const parsed = JSON.parse(policyText);
-                await client.send(new PutBucketPolicyCommand({ 
+                await s3Client.send(new PutBucketPolicyCommand({ 
                     Bucket: bucketName, 
                     Policy: JSON.stringify(parsed) 
                 }));
                 showSuccess('Bucket policy saved successfully!');
             } else {
-                await client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
+                await s3Client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
                 showSuccess('Bucket policy deleted successfully!');
             }
             setIsEditingPolicy(false);
             // Reload permissions
             const [acl, policy] = await Promise.all([
-                client.send(new GetBucketAclCommand({ Bucket: bucketName })).catch(() => null),
-                client.send(new GetBucketPolicyCommand({ Bucket: bucketName })).catch(() => null),
+                s3Client.send(new GetBucketAclCommand({ Bucket: bucketName })).catch(() => null),
+                s3Client.send(new GetBucketPolicyCommand({ Bucket: bucketName })).catch(() => null),
             ]);
             const policyJson = policy?.Policy ? JSON.parse(policy.Policy) : null;
             setPermissions({
@@ -129,12 +128,11 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
     const handleDeletePolicy = async () => {
         if (!window.confirm('Are you sure you want to delete the bucket policy?')) return;
         
-        const client = getS3Client();
-        if (!client || !bucketName) return;
+        if (!s3Client || !bucketName) return;
 
         setSaving(true);
         try {
-            await client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
+            await s3Client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
             showSuccess('Bucket policy deleted successfully!');
             setIsEditingPolicy(false);
             setPolicyText('');

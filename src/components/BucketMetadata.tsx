@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getS3Client } from '../s3-client';
+import { useS3Client } from '../hooks/useS3Client';
 import { HeadBucketCommand, GetBucketLocationCommand } from '@aws-sdk/client-s3';
 import { useToast } from '../hooks/useToast';
 
@@ -11,19 +11,19 @@ const BucketMetadata = ({ bucketName }: BucketMetadataProps) => {
     const [metadata, setMetadata] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const { showError } = useToast();
+    const s3Client = useS3Client();
 
     useEffect(() => {
         const loadMetadata = async () => {
-            const client = getS3Client();
-            if (!client || !bucketName) {
+            if (!s3Client || !bucketName) {
                 setLoading(false);
                 return;
             }
 
             try {
                 const [headResponse, locationResponse] = await Promise.all([
-                    client.send(new HeadBucketCommand({ Bucket: bucketName })).catch(() => null),
-                    client.send(new GetBucketLocationCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new HeadBucketCommand({ Bucket: bucketName })).catch(() => null),
+                    s3Client.send(new GetBucketLocationCommand({ Bucket: bucketName })).catch(() => null),
                 ]);
 
                 setMetadata({
@@ -39,7 +39,7 @@ const BucketMetadata = ({ bucketName }: BucketMetadataProps) => {
         };
 
         loadMetadata();
-    }, [bucketName]);
+    }, [bucketName, s3Client, showError]);
 
     if (loading) {
         return (
