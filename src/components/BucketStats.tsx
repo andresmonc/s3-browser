@@ -82,48 +82,46 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
 
     if (loading) {
         return (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-slate-200">
-                <div className="animate-pulse space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-1/3"></div>
-                    <div className="h-6 bg-slate-200 rounded"></div>
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-md px-3 py-1.5 border border-blue-200">
+                <div className="animate-pulse flex items-center gap-4">
+                    <div className="h-4 bg-slate-200 rounded w-16"></div>
+                    <div className="h-4 bg-slate-200 rounded w-20"></div>
+                    <div className="h-4 bg-slate-200 rounded w-12"></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-lg p-3 border border-blue-200 shadow-sm">
-            <h3 className="text-xs font-bold text-slate-700 mb-2 flex items-center space-x-1.5">
-                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Statistics</span>
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white rounded-md p-2 border border-blue-200">
-                    <div className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider mb-0.5">Objects</div>
-                    <div className="text-sm font-bold text-blue-900">{stats.totalObjects.toLocaleString()}</div>
-                </div>
-                <div className="bg-white rounded-md p-2 border border-purple-200">
-                    <div className="text-[10px] font-semibold text-purple-600 uppercase tracking-wider mb-0.5">Size</div>
-                    <div className="text-sm font-bold text-purple-900">{prettyBytes(stats.totalSize)}</div>
-                </div>
-                <div className="bg-white rounded-md p-2 border border-pink-200">
-                    <div className="text-[10px] font-semibold text-pink-600 uppercase tracking-wider mb-0.5">Images</div>
-                    <div className="text-sm font-bold text-pink-900">{stats.images}</div>
-                </div>
-                <div className="bg-white rounded-md p-2 border border-indigo-200">
-                    <div className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wider mb-0.5">Docs</div>
-                    <div className="text-sm font-bold text-indigo-900">{stats.documents}</div>
-                </div>
-                <div className="bg-white rounded-md p-2 border border-purple-200">
-                    <div className="text-[10px] font-semibold text-purple-600 uppercase tracking-wider mb-0.5">Videos</div>
-                    <div className="text-sm font-bold text-purple-900">{stats.videos}</div>
-                </div>
-                <div className="bg-white rounded-md p-2 border border-slate-200">
-                    <div className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider mb-0.5">Other</div>
-                    <div className="text-sm font-bold text-slate-900">{stats.other}</div>
-                </div>
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-md px-3 py-1.5 border border-blue-200 flex items-center gap-4 text-xs flex-wrap">
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Objects:</span>
+                <span className="text-blue-700 font-bold">{stats.totalObjects.toLocaleString()}</span>
+            </div>
+            <div className="w-px h-4 bg-blue-300"></div>
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Size:</span>
+                <span className="text-purple-700 font-bold">{prettyBytes(stats.totalSize)}</span>
+            </div>
+            <div className="w-px h-4 bg-blue-300"></div>
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Images:</span>
+                <span className="text-pink-700 font-bold">{stats.images}</span>
+            </div>
+            <div className="w-px h-4 bg-blue-300"></div>
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Docs:</span>
+                <span className="text-indigo-700 font-bold">{stats.documents}</span>
+            </div>
+            <div className="w-px h-4 bg-blue-300"></div>
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Videos:</span>
+                <span className="text-purple-700 font-bold">{stats.videos}</span>
+            </div>
+            <div className="w-px h-4 bg-blue-300"></div>
+            <div className="flex items-center gap-1.5">
+                <span className="text-slate-600 font-semibold">Other:</span>
+                <span className="text-slate-700 font-bold">{stats.other}</span>
             </div>
         </div>
     );

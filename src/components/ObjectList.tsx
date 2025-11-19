@@ -251,7 +251,7 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     return (
         <div 
             {...getRootProps()} 
-            className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 h-full flex flex-col overflow-hidden ${
+            className={`bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 h-full flex flex-col overflow-hidden w-full max-w-full ${
                 isDragActive ? 'ring-4 ring-blue-500 ring-opacity-50' : ''
             }`}
         >
@@ -314,7 +314,7 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                 )}
             </div>
             
-            <div className="p-8 flex-1 overflow-auto">
+            <div className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full max-w-full">
                 {/* Breadcrumbs */}
                 {currentPath && (
                     <div className="mb-4 flex items-center justify-between">

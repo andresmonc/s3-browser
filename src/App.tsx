@@ -74,50 +74,48 @@ function App() {
     }
 
     return (
-        <div className="h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col relative overflow-hidden">
+        <div className="h-screen w-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex relative overflow-hidden">
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
             </div>
-            
-            {/* Header */}
-            <header className="relative bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg flex-shrink-0">
-                <div className="flex items-center justify-between px-8 py-5">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300">
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+            {/* Main Content */}
+            <div className="flex flex-1 min-h-0 min-w-0 relative z-10 overflow-hidden">
+                <aside className="w-80 h-full bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-xl flex flex-col flex-shrink-0">
+                    <div className="p-4 border-b border-white/20 flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md transform hover:scale-110 transition-transform duration-300">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">S3 Browser</h1>
-                            <p className="text-xs text-slate-500 font-medium">Manage your S3 buckets and objects</p>
-                        </div>
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">S3 Browser</h1>
                     </div>
-                    <button
-                        onClick={() => setIsSettingsOpen(true)}
-                        className="flex items-center space-x-2 px-5 py-2.5 text-slate-700 hover:text-white bg-white/50 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 rounded-xl transition-all duration-300 font-semibold shadow-md hover:shadow-xl transform hover:scale-105 border border-slate-200/50 hover:border-transparent"
-                        title="Settings"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>Settings</span>
-                    </button>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <div className="flex flex-1 min-h-0 relative z-10">
-                <aside className="w-80 h-full bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-xl overflow-y-auto flex-shrink-0">
-                    <div className="p-6">
-                        <BucketList selectedBucket={selectedBucket} onSelectBucket={setSelectedBucket} />
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <BucketList 
+                            selectedBucket={selectedBucket} 
+                            onSelectBucket={setSelectedBucket}
+                        />
+                    </div>
+                    <div className="p-4 border-t border-white/20">
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-slate-700 hover:text-white bg-white/50 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 rounded-lg transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-md border border-slate-200/50 hover:border-transparent"
+                            title="Settings"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Settings</span>
+                        </button>
                     </div>
                 </aside>
-                <main className="flex-1 h-full overflow-y-auto p-8 min-w-0">
-                    <ObjectList selectedBucket={selectedBucket} />
+                <main className="flex-1 h-full overflow-y-auto p-8 min-w-0 max-w-full">
+                    <div className="w-full max-w-full">
+                        <ObjectList selectedBucket={selectedBucket} />
+                    </div>
                 </main>
             </div>
 
