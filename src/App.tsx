@@ -7,6 +7,7 @@ import PasswordModal from './components/PasswordModal';
 import { getS3Client, refreshS3Client } from './s3-client';
 import { useCredentials } from './contexts/CredentialContext';
 import { hasEncryptedCredentials, verifyPasswordAndDecryptCredentials, clearEncryptedCredentials } from './utils/encryption';
+import { setupActivityTracking, isSessionTimedOut, updateLastActivity, detectTampering, clearSensitiveData } from './utils/security';
 import type { S3Client } from '@aws-sdk/client-s3';
 import { useToast } from './hooks/useToast';
 
@@ -29,14 +30,36 @@ function App() {
     }, []);
 
     useEffect(() => {
+        // Check for tampering on mount
+        if (detectTampering()) {
+            showError('Security warning: Storage may have been tampered with. Please reconfigure.');
+            clearEncryptedCredentials();
+            clearCredentials();
+        }
+    }, [showError, clearCredentials]);
+
+    useEffect(() => {
         // Update S3 client when credentials change
         if (credentials) {
             const client = getS3Client(credentials);
             setS3Client(client);
+            updateLastActivity();
+            
+            // Setup session timeout tracking
+            const cleanup = setupActivityTracking(() => {
+                // Session timed out - clear credentials
+                clearCredentials();
+                clearSensitiveData();
+                setS3Client(null);
+                setIsPasswordModalOpen(true);
+                showError('Session timed out due to inactivity. Please enter your password again.');
+            });
+
+            return cleanup;
         } else {
             setS3Client(null);
         }
-    }, [credentials]);
+    }, [credentials, showError, clearCredentials]);
 
     const handlePasswordVerified = async (password: string) => {
         try {

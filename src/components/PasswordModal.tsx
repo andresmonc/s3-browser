@@ -6,6 +6,13 @@ import ErrorAlert from './ui/ErrorAlert';
 import { ICON_GRADIENTS } from '../utils/constants';
 import { useToast } from '../hooks/useToast';
 import { verifyPasswordAndDecryptCredentials } from '../utils/encryption';
+import { 
+    isAccountLocked, 
+    getRemainingLockoutTime, 
+    recordFailedAttempt, 
+    clearFailedAttempts,
+    validatePasswordStrength 
+} from '../utils/security';
 
 interface PasswordModalProps {
     isOpen: boolean;
@@ -28,6 +35,7 @@ const PasswordModal = ({
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [verifying, setVerifying] = useState(false);
+    const [lockoutTime, setLockoutTime] = useState(0);
     const { showError } = useToast();
 
     useEffect(() => {
@@ -36,6 +44,20 @@ const PasswordModal = ({
             setConfirmPassword('');
             setError(null);
             setVerifying(false);
+            
+            // Check for account lockout
+            if (isAccountLocked()) {
+                const remaining = getRemainingLockoutTime();
+                setLockoutTime(remaining);
+                const interval = setInterval(() => {
+                    const time = getRemainingLockoutTime();
+                    setLockoutTime(time);
+                    if (time === 0) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
+                return () => clearInterval(interval);
+            }
         }
     }, [isOpen]);
 
@@ -43,12 +65,29 @@ const PasswordModal = ({
         e.preventDefault();
         setError(null);
 
+        // Check for account lockout
+        if (isAccountLocked()) {
+            const remaining = getRemainingLockoutTime();
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            setError(`Too many failed attempts. Please wait ${minutes}:${seconds.toString().padStart(2, '0')} before trying again.`);
+            return;
+        }
+
         if (isFirstTime) {
             // First time setup - need to set password
-            if (!password || password.length < 4) {
-                setError('Password must be at least 4 characters long');
+            if (!password) {
+                setError('Please enter a password');
                 return;
             }
+            
+            // Validate password strength
+            const strengthCheck = validatePasswordStrength(password);
+            if (!strengthCheck.valid) {
+                setError(strengthCheck.message || 'Password does not meet requirements');
+                return;
+            }
+            
             if (password !== confirmPassword) {
                 setError('Passwords do not match');
                 return;
@@ -64,10 +103,19 @@ const PasswordModal = ({
             try {
                 // First verify the password by attempting to decrypt
                 await verifyPasswordAndDecryptCredentials(password);
-                // Password is correct, call the callback
+                // Password is correct, clear failed attempts and call callback
+                clearFailedAttempts();
                 onPasswordVerified(password);
             } catch (err: any) {
-                setError(err.message || 'Invalid password');
+                recordFailedAttempt();
+                if (isAccountLocked()) {
+                    const remaining = getRemainingLockoutTime();
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+                    setError(`Too many failed attempts. Account locked for ${minutes}:${seconds.toString().padStart(2, '0')}.`);
+                } else {
+                    setError(err.message || 'Invalid password');
+                }
                 showError(err.message || 'Failed to verify password');
                 setVerifying(false);
             }
@@ -103,7 +151,7 @@ const PasswordModal = ({
                     variant="primary" 
                     onClick={handleSubmit}
                     isLoading={verifying}
-                    disabled={!password || (isFirstTime && password !== confirmPassword)}
+                    disabled={lockoutTime > 0 || !password || (isFirstTime && password !== confirmPassword)}
                     size="sm"
                 >
                     {isFirstTime ? 'Set Password' : 'Unlock'}
@@ -167,16 +215,27 @@ const PasswordModal = ({
                         </>
                     ) : (
                         <>
-                            <div className="bg-amber-50/50 border border-amber-100 rounded-lg p-3">
-                                <p className="text-xs text-amber-900 leading-relaxed mb-1.5">
-                                    Please enter your password to decrypt and access your stored AWS credentials.
-                                </p>
-                                {onReset && (
-                                    <p className="text-xs text-amber-700 mt-1.5">
-                                        Forgot your password? You can reset and reconfigure your credentials.
+                            {lockoutTime > 0 ? (
+                                <div className="bg-red-50/50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-xs text-red-900 leading-relaxed font-semibold">
+                                        Account locked due to too many failed attempts.
                                     </p>
-                                )}
-                            </div>
+                                    <p className="text-xs text-red-700 mt-1">
+                                        Please wait {Math.floor(lockoutTime / 60)}:{(lockoutTime % 60).toString().padStart(2, '0')} before trying again.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="bg-amber-50/50 border border-amber-100 rounded-lg p-3">
+                                    <p className="text-xs text-amber-900 leading-relaxed mb-1.5">
+                                        Please enter your password to decrypt and access your stored AWS credentials.
+                                    </p>
+                                    {onReset && (
+                                        <p className="text-xs text-amber-700 mt-1.5">
+                                            Forgot your password? You can reset and reconfigure your credentials.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             
                             <Input
                                 id="password"
@@ -189,8 +248,9 @@ const PasswordModal = ({
                                 }}
                                 placeholder="Enter your password"
                                 required
-                                autoFocus
-                                helperText="Enter the password you set when configuring credentials"
+                                autoFocus={lockoutTime === 0}
+                                disabled={lockoutTime > 0}
+                                helperText={lockoutTime > 0 ? "Account is temporarily locked" : "Enter the password you set when configuring credentials"}
                             />
                         </>
                     )}
