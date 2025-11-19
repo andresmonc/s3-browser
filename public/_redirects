@@ -1,5 +1,0 @@
-# Cloudflare Pages redirects for SPA routing
-# Only redirect if the file doesn't exist
-# Cloudflare Pages will automatically serve existing files
-/*    /index.html   200
-
