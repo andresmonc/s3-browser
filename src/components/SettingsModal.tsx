@@ -148,6 +148,12 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
             <div className="space-y-4">
                 {error && <ErrorAlert message={error} />}
                 
+                <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-900 leading-relaxed">
+                        <strong className="font-semibold">Privacy Notice:</strong> This tool lives entirely in your browser; nothing leaves your device except your direct S3 calls. Still, never paste keys you're not comfortable storing locally.
+                    </p>
+                </div>
+                
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex-1">

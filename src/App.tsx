@@ -113,7 +113,12 @@ function App() {
                             </svg>
                         </div>
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">Configuration Required</h1>
-                        <p className="text-slate-600 text-lg">Please configure your S3 credentials to continue.</p>
+                        <p className="text-slate-600 text-lg mb-4">Please configure your S3 credentials to continue.</p>
+                        <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3 mb-6">
+                            <p className="text-xs text-blue-900 leading-relaxed text-center">
+                                <strong className="font-semibold">Privacy Notice:</strong> This tool lives entirely in your browser; nothing leaves your device except your direct S3 calls. Still, never paste keys you're not comfortable storing locally.
+                            </p>
+                        </div>
                     </div>
                     <button 
                         className="w-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden group mb-4"

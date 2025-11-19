@@ -97,20 +97,22 @@ export async function downloadOfflineBundle() {
         }
         
         // Create HTML file with updated paths (relative paths for offline use)
+        // Include strict CSP and security headers
         const htmlTemplate = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https:; font-src 'self' data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <title>S3 Browser</title>
-    ${stylesheets.map(({ filename }) => `<link rel="stylesheet" href="./assets/${filename}" />`).join('\n    ')}
+    ${stylesheets.length > 0 ? stylesheets.map(({ filename }) => `<link rel="stylesheet" href="./assets/${filename}" />`).join('\n    ') : ''}
   </head>
   <body>
     <div id="root"></div>
-    ${scripts.map(({ filename }) => `<script type="module" src="./assets/${filename}"></script>`).join('\n    ')}
+    ${scripts.length > 0 ? scripts.map(({ filename }) => `<script type="module" src="./assets/${filename}"></script>`).join('\n    ') : '<script>alert("No scripts found. Please build the application first (npm run build) and download the bundle from the built version.");</script>'}
   </body>
 </html>`;
         
