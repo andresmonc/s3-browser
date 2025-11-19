@@ -50,14 +50,50 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
         loadPermissions();
     }, [bucketName]);
 
+    const validateJSON = (text: string): { valid: boolean; error?: string } => {
+        if (!text.trim()) {
+            return { valid: true }; // Empty is valid (will delete policy)
+        }
+        
+        try {
+            const parsed = JSON.parse(text);
+            
+            // Basic S3 policy structure validation
+            if (typeof parsed !== 'object' || parsed === null) {
+                return { valid: false, error: 'Policy must be a JSON object' };
+            }
+            
+            if (!parsed.Version) {
+                return { valid: false, error: 'Policy must include a "Version" field' };
+            }
+            
+            if (!parsed.Statement || !Array.isArray(parsed.Statement)) {
+                return { valid: false, error: 'Policy must include a "Statement" array' };
+            }
+            
+            return { valid: true };
+        } catch (error: any) {
+            return { 
+                valid: false, 
+                error: `Invalid JSON: ${error.message || 'Syntax error'}` 
+            };
+        }
+    };
+
     const handleSavePolicy = async () => {
         const client = getS3Client();
         if (!client || !bucketName) return;
 
+        // Validate JSON before attempting to save
+        const validation = validateJSON(policyText);
+        if (!validation.valid) {
+            showError(validation.error || 'Invalid JSON format');
+            return;
+        }
+
         setSaving(true);
         try {
             if (policyText.trim()) {
-                // Validate JSON
                 const parsed = JSON.parse(policyText);
                 await client.send(new PutBucketPolicyCommand({ 
                     Bucket: bucketName, 
@@ -84,11 +120,7 @@ const BucketPermissions = ({ bucketName }: BucketPermissionsProps) => {
             });
             setPolicyText(policy?.Policy ? JSON.stringify(policyJson, null, 2) : '');
         } catch (error: any) {
-            if (error.message?.includes('JSON')) {
-                showError('Invalid JSON format. Please check your policy syntax.');
-            } else {
-                showError(`Failed to save policy: ${error.message || 'Unknown error'}`);
-            }
+            showError(`Failed to save policy: ${error.message || 'Unknown error'}`);
         } finally {
             setSaving(false);
         }
