@@ -65,7 +65,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                 showError(`Failed to delete bucket: ${error.message || 'Unknown error'}`);
             }
         }
-    }, [credentials, selectedBucket, onSelectBucket, showSuccess, showError]);
+    };
 
     return (
         <div>
