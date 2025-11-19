@@ -48,8 +48,9 @@ const Modal = ({
 
     return (
         <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-fadeIn"
             onClick={onClose}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
             <div 
                 className={`bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-hidden border border-white/20 animate-scaleIn`}
