@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getS3Client } from '../s3-client';
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, _Object } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
@@ -12,9 +13,7 @@ import Breadcrumbs from './Breadcrumbs';
 import BucketStats from './BucketStats';
 import { useToast } from '../hooks/useToast';
 
-interface ObjectListProps {
-    selectedBucket: string | null;
-}
+interface ObjectListProps {}
 
 interface UploadProgress {
     file: File;
@@ -23,11 +22,18 @@ interface UploadProgress {
 
 type TabType = 'objects' | 'metadata' | 'properties' | 'permissions' | 'metrics' | 'management' | 'access-points';
 
-const ObjectList = ({ selectedBucket }: ObjectListProps) => {
+const ObjectList = ({}: ObjectListProps) => {
+    const { bucketName, '*' : pathParam } = useParams<{ bucketName?: string; '*'?: string }>();
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    const selectedBucket = bucketName ? decodeURIComponent(bucketName) : null;
+    // React Router already decodes the path parameter
+    const currentPath = pathParam || '';
+    
     const [activeTab, setActiveTab] = useState<TabType>('objects');
     const [objects, setObjects] = useState<_Object[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPath, setCurrentPath] = useState('');
     const [selectedObjects, setSelectedObjects] = useState<Set<string>>(new Set());
     const [refresh, setRefresh] = useState(false);
     const [previewObject, setPreviewObject] = useState<string | null>(null);
@@ -175,15 +181,24 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     };
 
     const navigateToFolder = (prefix: string) => {
-        setCurrentPath(prefix);
+        if (!selectedBucket) return;
+        const encodedBucket = encodeURIComponent(selectedBucket);
+        // Encode each path segment separately, but keep slashes
+        const pathSegments = prefix.split('/').filter(Boolean).map(seg => encodeURIComponent(seg));
+        const path = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '';
+        navigate(`/bucket/${encodedBucket}/${path}`);
         setSelectedObjects(new Set());
     };
 
     const navigateUp = () => {
-        if (!currentPath) return;
+        if (!currentPath || !selectedBucket) return;
         const parts = currentPath.split('/').filter(Boolean);
         parts.pop();
-        setCurrentPath(parts.length > 0 ? parts.join('/') + '/' : '');
+        const newPath = parts.length > 0 ? parts.join('/') + '/' : '';
+        const encodedBucket = encodeURIComponent(selectedBucket);
+        const pathSegments = newPath.split('/').filter(Boolean).map(seg => encodeURIComponent(seg));
+        const path = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '';
+        navigate(`/bucket/${encodedBucket}/${path}`);
         setSelectedObjects(new Set());
     };
 

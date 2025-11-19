@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
 import BucketList from './components/BucketList';
 import ObjectList from './components/ObjectList';
 import SettingsModal from './components/SettingsModal';
@@ -7,7 +8,6 @@ import type { S3Client } from '@aws-sdk/client-s3';
 import { useToast } from './hooks/useToast';
 
 function App() {
-    const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
     const [s3Client, setS3Client] = useState<S3Client | null>(getS3Client());
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const { showSuccess } = useToast();
@@ -74,6 +74,51 @@ function App() {
     }
 
     return (
+        <>
+            <AppContent />
+            <SettingsModal 
+                isOpen={isSettingsOpen} 
+                onClose={() => setIsSettingsOpen(false)}
+                onSave={handleSaveCredentials}
+            />
+        </>
+    );
+}
+
+function AppContent() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const { showSuccess } = useToast();
+
+    useEffect(() => {
+        const client = getS3Client();
+        if (!client) {
+            setIsSettingsOpen(true);
+        }
+    }, []);
+
+    const handleSaveCredentials = () => {
+        const client = refreshS3Client();
+        setIsSettingsOpen(false);
+        if (client) {
+            showSuccess('S3 connection established successfully!');
+        }
+    };
+
+    const handleBucketSelect = (bucket: string | null) => {
+        if (bucket) {
+            navigate(`/bucket/${encodeURIComponent(bucket)}`);
+        } else {
+            navigate('/');
+        }
+    };
+
+    // Get selected bucket from URL
+    const bucketMatch = location.pathname.match(/^\/bucket\/([^/]+)/);
+    const selectedBucket = bucketMatch ? decodeURIComponent(bucketMatch[1]) : null;
+
+    return (
         <div className="h-screen w-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex relative overflow-hidden">
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -94,8 +139,8 @@ function App() {
                     </div>
                     <div className="flex-1 overflow-y-auto p-6">
                         <BucketList 
-                            selectedBucket={selectedBucket} 
-                            onSelectBucket={setSelectedBucket}
+                            selectedBucket={selectedBucket}
+                            onSelectBucket={handleBucketSelect}
                         />
                     </div>
                     <div className="p-4 border-t border-white/20">
@@ -114,11 +159,13 @@ function App() {
                 </aside>
                 <main className="flex-1 h-full overflow-y-auto p-8 min-w-0 max-w-full">
                     <div className="w-full max-w-full">
-                        <ObjectList selectedBucket={selectedBucket} />
+                        <Routes>
+                            <Route path="/" element={<ObjectList />} />
+                            <Route path="/bucket/:bucketName/*" element={<ObjectList />} />
+                        </Routes>
                     </div>
                 </main>
             </div>
-
             <SettingsModal 
                 isOpen={isSettingsOpen} 
                 onClose={() => setIsSettingsOpen(false)}
