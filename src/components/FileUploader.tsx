@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { s3Client } from '../s3-client';
+import { getS3Client } from '../s3-client';
 import { Upload } from '@aws-sdk/lib-storage';
 
 interface FileUploaderProps {
@@ -17,7 +17,8 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
     const [uploads, setUploads] = useState<UploadProgress[]>([]);
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        if (!selectedBucket || !s3Client) return;
+        const client = getS3Client();
+        if (!selectedBucket || !client) return;
 
         const newUploads = acceptedFiles.map(file => ({ file, progress: 0 }));
         setUploads(prev => [...prev, ...newUploads]);
@@ -26,7 +27,7 @@ const FileUploader = ({ selectedBucket, onUploadSuccess }: FileUploaderProps) =>
             const file = acceptedFiles[i];
             try {
                 const upload = new Upload({
-                    client: s3Client,
+                    client: client,
                     params: {
                         Bucket: selectedBucket,
                         Key: file.name,

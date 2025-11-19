@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { s3Client } from '../s3-client';
+import { getS3Client } from '../s3-client';
 import { CreateBucketCommand, DeleteBucketCommand, ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 
 interface RenameBucketModalProps {
@@ -27,7 +27,8 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
     }, [isOpen]);
 
     const handleRename = async () => {
-        if (!s3Client) return;
+        const client = getS3Client();
+        if (!client) return;
         setError(null);
 
         if (!newBucketName) {
@@ -50,9 +51,9 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
 
         try {
             // Check if new bucket name already exists
-            await s3Client.send(new CreateBucketCommand({ Bucket: newBucketName }));
+            await client.send(new CreateBucketCommand({ Bucket: newBucketName }));
             // If it doesn't throw, it means it was created, so we delete it to proceed with copy
-            await s3Client.send(new DeleteBucketCommand({ Bucket: newBucketName }));
+            await client.send(new DeleteBucketCommand({ Bucket: newBucketName }));
         } catch (e: any) {
             if (e.name === 'BucketAlreadyOwnedByYou' || e.name === 'BucketAlreadyExists') {
                 setError('New bucket name already exists.');
@@ -70,7 +71,7 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
             let continuationToken: string | undefined = undefined;
 
             while (isTruncated) {
-                const listedObjects = await s3Client.send(new ListObjectsV2Command({ Bucket: oldBucketName, ContinuationToken: continuationToken }));
+                const listedObjects = await client.send(new ListObjectsV2Command({ Bucket: oldBucketName, ContinuationToken: continuationToken }));
                 if (listedObjects.Contents) {
                     allObjects = allObjects.concat(listedObjects.Contents);
                 }
@@ -80,13 +81,13 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
 
             if (allObjects.length === 0) {
                 setStatus('Old bucket is empty. Creating new bucket...');
-                await s3Client.send(new CreateBucketCommand({ Bucket: newBucketName }));
+                await client.send(new CreateBucketCommand({ Bucket: newBucketName }));
             } else {
                 setStatus(`Copying ${allObjects.length} objects to new bucket...`);
                 let copiedCount = 0;
                 for (const obj of allObjects) {
                     if (obj.Key) {
-                        await s3Client.send(new CopyObjectCommand({
+                        await client.send(new CopyObjectCommand({
                             CopySource: `/${oldBucketName}/${obj.Key}`,
                             Bucket: newBucketName,
                             Key: obj.Key,
@@ -103,11 +104,11 @@ const RenameBucketModal = ({ oldBucketName, isOpen, onClose, onRenameSuccess }: 
                         Objects: allObjects.map(({ Key }) => ({ Key }))
                     }
                 };
-                await s3Client.send(new DeleteObjectsCommand(deleteParams));
+                await client.send(new DeleteObjectsCommand(deleteParams));
             }
 
             setStatus('Deleting old bucket...');
-            await s3Client.send(new DeleteBucketCommand({ Bucket: oldBucketName }));
+            await client.send(new DeleteBucketCommand({ Bucket: oldBucketName }));
 
             setStatus('Rename successful!');
             onRenameSuccess();

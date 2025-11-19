@@ -1,6 +1,6 @@
 import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketPolicyCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketPolicyCommand, PutBucketWebsiteCommand, DeleteBucketPolicyCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand, GetPublicAccessBlockCommand, PutPublicAccessBlockCommand, DeletePublicAccessBlockCommand } from "@aws-sdk/client-s3";
 import { useEffect, useState } from "react";
-import { s3Client } from "../s3-client";
+import { getS3Client } from "../s3-client";
 
 
 interface BucketSettingsModalProps {
@@ -27,10 +27,11 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         setHasUnsavedChanges(false);
 
         const fetchBucketSettings = async () => {
-            if (!s3Client) return;
+            const client = getS3Client();
+            if (!client) return;
 
             try {
-                const policy = await s3Client.send(new GetBucketPolicyCommand({ Bucket: bucketName }));
+                const policy = await client.send(new GetBucketPolicyCommand({ Bucket: bucketName }));
                 setBucketPolicy(policy.Policy || JSON.stringify({
                     "Version": "2012-10-17",
                     "Statement": [
@@ -61,7 +62,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             }
 
             try {
-                const cors = await s3Client.send(new GetBucketCorsCommand({ Bucket: bucketName }));
+                const cors = await client.send(new GetBucketCorsCommand({ Bucket: bucketName }));
                 setCorsRules(JSON.stringify(cors.CORSRules, null, 2));
             } catch (error) {
                 if ((error as any).name !== 'NoSuchCORSConfiguration') {
@@ -77,7 +78,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             }
 
             try {
-                const website = await s3Client.send(new GetBucketWebsiteCommand({ Bucket: bucketName }));
+                const website = await client.send(new GetBucketWebsiteCommand({ Bucket: bucketName }));
                 setWebsiteConfig(JSON.stringify({ IndexDocument: website.IndexDocument, ErrorDocument: website.ErrorDocument }, null, 2));
             } catch (error) {
                 if ((error as any).name !== 'NoSuchWebsiteConfiguration') {
@@ -95,7 +96,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             }
 
             try {
-                const logging = await s3Client.send(new GetBucketLoggingCommand({ Bucket: bucketName }));
+                const logging = await client.send(new GetBucketLoggingCommand({ Bucket: bucketName }));
                 setLoggingConfig(JSON.stringify(logging.LoggingEnabled, null, 2));
             } catch (error) {
                 console.error('Error fetching bucket logging configuration:', error);
@@ -106,7 +107,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             }
 
             try {
-                const publicAccessBlock = await s3Client.send(new GetPublicAccessBlockCommand({ Bucket: bucketName }));
+                const publicAccessBlock = await client.send(new GetPublicAccessBlockCommand({ Bucket: bucketName }));
                 setBlockPublicAcls(publicAccessBlock.PublicAccessBlockConfiguration?.BlockPublicAcls || false);
                 setIgnorePublicAcls(publicAccessBlock.PublicAccessBlockConfiguration?.IgnorePublicAcls || false);
                 setBlockPublicPolicy(publicAccessBlock.PublicAccessBlockConfiguration?.BlockPublicPolicy || false);
@@ -135,14 +136,15 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         onClose();
     };
     const handleSave = async () => {
-        if (!s3Client || !hasUnsavedChanges) return;
+        const client = getS3Client();
+        if (!client || !hasUnsavedChanges) return;
         const errors: string[] = [];
 
         try {
             if (bucketPolicy) {
-                await s3Client.send(new PutBucketPolicyCommand({ Bucket: bucketName, Policy: bucketPolicy }));
+                await client.send(new PutBucketPolicyCommand({ Bucket: bucketName, Policy: bucketPolicy }));
             } else {
-                await s3Client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
+                await client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
             }
         } catch (e: any) {
             errors.push(`Error saving bucket policy: ${e.message}`);
@@ -150,9 +152,9 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
 
         try {
             if (corsRules) {
-                await s3Client.send(new PutBucketCorsCommand({ Bucket: bucketName, CORSConfiguration: { CORSRules: JSON.parse(corsRules) } }));
+                await client.send(new PutBucketCorsCommand({ Bucket: bucketName, CORSConfiguration: { CORSRules: JSON.parse(corsRules) } }));
             } else {
-                await s3Client.send(new DeleteBucketCorsCommand({ Bucket: bucketName }));
+                await client.send(new DeleteBucketCorsCommand({ Bucket: bucketName }));
             }
         } catch (e: any) {
             errors.push(`Error saving CORS rules: ${e.message}`);
@@ -160,9 +162,9 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
 
         try {
             if (websiteConfig) {
-                await s3Client.send(new PutBucketWebsiteCommand({ Bucket: bucketName, WebsiteConfiguration: JSON.parse(websiteConfig) }));
+                await client.send(new PutBucketWebsiteCommand({ Bucket: bucketName, WebsiteConfiguration: JSON.parse(websiteConfig) }));
             } else {
-                await s3Client.send(new DeleteBucketWebsiteCommand({ Bucket: bucketName }));
+                await client.send(new DeleteBucketWebsiteCommand({ Bucket: bucketName }));
             }
         } catch (e: any) {
             errors.push(`Error saving website configuration: ${e.message}`);
@@ -170,9 +172,9 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
 
         try {
             if (loggingConfig) {
-                await s3Client.send(new PutBucketLoggingCommand({ Bucket: bucketName, BucketLoggingStatus: { LoggingEnabled: JSON.parse(loggingConfig) } }));
+                await client.send(new PutBucketLoggingCommand({ Bucket: bucketName, BucketLoggingStatus: { LoggingEnabled: JSON.parse(loggingConfig) } }));
             } else {
-                await s3Client.send(new PutBucketLoggingCommand({ Bucket: bucketName, BucketLoggingStatus: {} }));
+                await client.send(new PutBucketLoggingCommand({ Bucket: bucketName, BucketLoggingStatus: {} }));
             }
         } catch (e: any) {
             errors.push(`Error saving logging configuration: ${e.message}`);
@@ -180,7 +182,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
 
         try {
             if (blockPublicAcls || ignorePublicAcls || blockPublicPolicy || restrictPublicBuckets) {
-                await s3Client.send(new PutPublicAccessBlockCommand({
+                await client.send(new PutPublicAccessBlockCommand({
                     Bucket: bucketName,
                     PublicAccessBlockConfiguration: {
                         BlockPublicAcls: blockPublicAcls,
@@ -190,7 +192,7 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
                     },
                 }));
             } else {
-                await s3Client.send(new DeletePublicAccessBlockCommand({ Bucket: bucketName }));
+                await client.send(new DeletePublicAccessBlockCommand({ Bucket: bucketName }));
             }
         } catch (e: any) {
             errors.push(`Error saving public access block configuration: ${e.message}`);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { s3Client } from '../s3-client';
+import { getS3Client } from '../s3-client';
 import { HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 
 interface CreateBucketModalProps {
@@ -20,18 +20,23 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
     }, [isOpen]);
 
     const handleCreate = async () => {
+        const client = getS3Client();
+        if (!client) {
+            alert('S3 client not configured. Please configure your credentials.');
+            return;
+        }
         if (!/^[a-z0-9.-]{3,63}$/.test(bucketName)) {
             alert('Invalid bucket name. Bucket names must be between 3 and 63 characters long and can only contain lowercase letters, numbers, periods, and hyphens.');
             return;
         }
         setCreating(true);
         try {
-            await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+            await client.send(new HeadBucketCommand({ Bucket: bucketName }));
             alert('Bucket name already exists.');
         } catch (error) {
             if ((error as any).name === 'NotFound') {
                 try {
-                    await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+                    await client.send(new CreateBucketCommand({ Bucket: bucketName }));
                     onCreate(bucketName);
                 } catch (createError) {
                     console.error('Error creating bucket:', createError);

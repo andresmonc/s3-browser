@@ -1,24 +1,26 @@
 import { S3Client } from '@aws-sdk/client-s3';
+import { loadCredentialsFromStorage } from './components/SettingsModal';
 
-const getS3Client = () => {
-    const endpoint = import.meta.env.VITE_S3_ENDPOINT;
-    const region = import.meta.env.VITE_S3_REGION;
-    const accessKeyId = import.meta.env.VITE_S3_ACCESS_KEY_ID;
-    const secretAccessKey = import.meta.env.VITE_S3_SECRET_ACCESS_KEY;
-
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
+export const getS3Client = (): S3Client | null => {
+    const credentials = loadCredentialsFromStorage();
+    
+    if (!credentials || !credentials.endpoint || !credentials.accessKeyId || !credentials.secretAccessKey) {
         return null;
     }
 
+    // Create a new client instance with current credentials
     return new S3Client({
-        endpoint,
-        region,
+        endpoint: credentials.endpoint,
+        region: credentials.region || 'us-east-1',
         credentials: {
-            accessKeyId,
-            secretAccessKey,
+            accessKeyId: credentials.accessKeyId,
+            secretAccessKey: credentials.secretAccessKey,
         },
         forcePathStyle: true, // Required for MinIO
     });
 };
 
-export const s3Client = getS3Client();
+// Function to refresh the client instance (call this after updating credentials)
+export const refreshS3Client = (): S3Client | null => {
+    return getS3Client();
+};

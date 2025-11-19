@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { s3Client } from '../s3-client';
+import { getS3Client } from '../s3-client';
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, _Object } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
 import FileUploader from './FileUploader';
@@ -16,14 +16,15 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     const forceRefresh = () => setRefresh(!refresh);
 
     useEffect(() => {
-        if (!selectedBucket || !s3Client) {
+        const client = getS3Client();
+        if (!selectedBucket || !client) {
             setObjects([]);
             return;
         }
 
         const fetchObjects = async () => {
             try {
-                const response = await s3Client.send(new ListObjectsV2Command({ Bucket: selectedBucket }));
+                const response = await client.send(new ListObjectsV2Command({ Bucket: selectedBucket }));
                 setObjects(response.Contents || []);
             } catch (error) {
                 console.error('Error fetching objects:', error);
@@ -34,11 +35,12 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     }, [selectedBucket, refresh]);
 
     const handleDeleteObject = async (key: string) => {
-        if (!selectedBucket || !s3Client) return;
+        const client = getS3Client();
+        if (!selectedBucket || !client) return;
 
         if (window.confirm(`Are you sure you want to delete "${key}"?`)) {
             try {
-                await s3Client.send(new DeleteObjectCommand({ Bucket: selectedBucket, Key: key }));
+                await client.send(new DeleteObjectCommand({ Bucket: selectedBucket, Key: key }));
                 forceRefresh();
             } catch (error) {
                 console.error('Error deleting object:', error);
@@ -47,11 +49,12 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
     };
 
     const handleDownloadObject = async (key: string) => {
-        if (!selectedBucket || !s3Client) return;
+        const client = getS3Client();
+        if (!selectedBucket || !client) return;
 
         try {
             const command = new GetObjectCommand({ Bucket: selectedBucket, Key: key });
-            const response = await s3Client.send(command);
+            const response = await client.send(command);
             const body = response.Body;
 
             if (body) {

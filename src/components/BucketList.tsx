@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { s3Client } from '../s3-client';
+import { getS3Client } from '../s3-client';
 import { CreateBucketCommand, DeleteBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
 import CreateBucketModal from './CreateBucketModal';
 import BucketSettingsModal from './BucketSettingsModal';
@@ -26,9 +26,10 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
 
     useEffect(() => {
         const fetchBuckets = async () => {
-            if (!s3Client) return;
+            const client = getS3Client();
+            if (!client) return;
             try {
-                const response = await s3Client.send(new ListBucketsCommand({}));
+                const response = await client.send(new ListBucketsCommand({}));
                 setBuckets(response.Buckets?.map(bucket => bucket.Name || '').filter(Boolean) || []);
             } catch (error) {
                 console.error('Error fetching buckets:', error);
@@ -39,9 +40,10 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     }, [refresh]);
 
     const handleCreateBucket = async (bucketName: string) => {
-        if (!s3Client) return;
+        const client = getS3Client();
+        if (!client) return;
         try {
-            await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+            await client.send(new CreateBucketCommand({ Bucket: bucketName }));
             setIsModalOpen(false);
             setRefresh(!refresh);
         } catch (error) {
@@ -50,10 +52,11 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
     };
 
     const handleDeleteBucket = async (bucketName: string) => {
-        if (!s3Client) return;
+        const client = getS3Client();
+        if (!client) return;
         if (window.confirm(`Are you sure you want to delete bucket "${bucketName}"?`)) {
             try {
-                await s3Client.send(new DeleteBucketCommand({ Bucket: bucketName }));
+                await client.send(new DeleteBucketCommand({ Bucket: bucketName }));
                 setRefresh(!refresh);
                 if (selectedBucket === bucketName) {
                     onSelectBucket(null);
