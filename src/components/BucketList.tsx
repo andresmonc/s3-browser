@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getS3Client } from '../s3-client';
-import { CreateBucketCommand, DeleteBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
+import { DeleteBucketCommand, ListBucketsCommand } from '@aws-sdk/client-s3';
 import CreateBucketModal from './CreateBucketModal';
 import BucketSettingsModal from './BucketSettingsModal';
 import RenameBucketModal from './RenameBucketModal';
@@ -42,17 +42,10 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
         fetchBuckets();
     }, [refresh]);
 
-    const handleCreateBucket = async (bucketName: string) => {
-        const client = getS3Client();
-        if (!client) return;
-        try {
-            await client.send(new CreateBucketCommand({ Bucket: bucketName }));
-            setIsModalOpen(false);
-            setRefresh(!refresh);
-            showSuccess(`Bucket "${bucketName}" created successfully!`);
-        } catch (error: any) {
-            showError(`Failed to create bucket: ${error.message || 'Unknown error'}`);
-        }
+    const handleCreateBucket = (bucketName: string) => {
+        setIsModalOpen(false);
+        setRefresh(!refresh);
+        // The modal already handles creation and shows success/error messages
     };
 
     const handleDeleteBucket = async (bucketName: string) => {

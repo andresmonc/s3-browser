@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
     isOpen: boolean;
@@ -46,7 +47,7 @@ const Modal = ({
         ? 'p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-all duration-200 transform hover:rotate-90'
         : 'p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200';
 
-    return (
+    const modalContent = (
         <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-fadeIn"
             onClick={onClose}
@@ -89,6 +90,9 @@ const Modal = ({
             </div>
         </div>
     );
+
+    // Render modal using portal to ensure it's always on top
+    return createPortal(modalContent, document.body);
 };
 
 export default Modal;

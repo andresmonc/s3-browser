@@ -28,6 +28,9 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
     }, [isOpen]);
 
     const handleCreate = async () => {
+        // Prevent double submission
+        if (creating) return;
+        
         const client = getS3Client();
         if (!client) {
             setError('S3 client not configured. Please configure your credentials.');
@@ -42,24 +45,27 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
         try {
             await client.send(new HeadBucketCommand({ Bucket: bucketName }));
             setError('Bucket name already exists.');
+            setCreating(false);
         } catch (error) {
             if ((error as any).name === 'NotFound') {
                 try {
                     await client.send(new CreateBucketCommand({ Bucket: bucketName }));
                     showSuccess(`Bucket "${bucketName}" created successfully!`);
                     onCreate(bucketName);
+                    setCreating(false);
                 } catch (createError) {
                     const errorMsg = `Error creating bucket: ${(createError as any).message}`;
                     setError(errorMsg);
                     showError(errorMsg);
+                    setCreating(false);
                 }
             } else {
                 const errorMsg = `Error checking bucket name: ${(error as any).message}`;
                 setError(errorMsg);
                 showError(errorMsg);
+                setCreating(false);
             }
         }
-        setCreating(false);
     };
 
     const icon = (
