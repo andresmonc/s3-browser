@@ -82,45 +82,45 @@ const BucketStats = ({ bucketName }: BucketStatsProps) => {
 
     if (loading) {
         return (
-            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-md px-3 py-1.5 border border-blue-200">
-                <div className="animate-pulse flex items-center gap-4">
-                    <div className="h-4 bg-slate-200 rounded w-16"></div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-slate-200">
+                <div className="animate-pulse flex items-center gap-6">
                     <div className="h-4 bg-slate-200 rounded w-20"></div>
-                    <div className="h-4 bg-slate-200 rounded w-12"></div>
+                    <div className="h-4 bg-slate-200 rounded w-24"></div>
+                    <div className="h-4 bg-slate-200 rounded w-16"></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-md px-3 py-1.5 border border-blue-200 flex items-center gap-4 text-xs flex-wrap">
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Objects:</span>
-                <span className="text-blue-700 font-bold">{stats.totalObjects.toLocaleString()}</span>
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-slate-200 flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Objects:</span>
+                <span className="text-blue-600 font-bold">{stats.totalObjects.toLocaleString()}</span>
             </div>
-            <div className="w-px h-4 bg-blue-300"></div>
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Size:</span>
-                <span className="text-purple-700 font-bold">{prettyBytes(stats.totalSize)}</span>
+            <div className="w-px h-5 bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Size:</span>
+                <span className="text-slate-800 font-bold">{prettyBytes(stats.totalSize)}</span>
             </div>
-            <div className="w-px h-4 bg-blue-300"></div>
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Images:</span>
-                <span className="text-pink-700 font-bold">{stats.images}</span>
+            <div className="w-px h-5 bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Images:</span>
+                <span className="text-pink-600 font-bold">{stats.images}</span>
             </div>
-            <div className="w-px h-4 bg-blue-300"></div>
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Docs:</span>
-                <span className="text-indigo-700 font-bold">{stats.documents}</span>
+            <div className="w-px h-5 bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Docs:</span>
+                <span className="text-indigo-600 font-bold">{stats.documents}</span>
             </div>
-            <div className="w-px h-4 bg-blue-300"></div>
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Videos:</span>
-                <span className="text-purple-700 font-bold">{stats.videos}</span>
+            <div className="w-px h-5 bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Videos:</span>
+                <span className="text-purple-600 font-bold">{stats.videos}</span>
             </div>
-            <div className="w-px h-4 bg-blue-300"></div>
-            <div className="flex items-center gap-1.5">
-                <span className="text-slate-600 font-semibold">Other:</span>
+            <div className="w-px h-5 bg-slate-300"></div>
+            <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-medium">Other:</span>
                 <span className="text-slate-700 font-bold">{stats.other}</span>
             </div>
         </div>

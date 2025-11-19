@@ -263,11 +263,6 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                         <p className="text-sm text-slate-600 font-medium">Bucket: <span className="font-bold text-slate-800 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">{selectedBucket}</span></p>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-md">
-                            <span className="text-sm font-bold text-slate-700">
-                                {filteredObjects.length} <span className="text-slate-500 font-normal">{filteredObjects.length === 1 ? 'object' : 'objects'}</span>
-                            </span>
-                        </div>
                         <Button 
                             onClick={handleUploadButtonClick}
                             variant="primary"
