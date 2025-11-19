@@ -1,5 +1,5 @@
-# Cloudflare Pages SPA redirect
-# This redirects all non-file requests to index.html for React Router
-# Cloudflare Pages automatically excludes existing files (index.html, assets/*) from redirects
+# Cloudflare Pages redirects for SPA routing
+# Only redirect if the file doesn't exist
+# Cloudflare Pages will automatically serve existing files
 /*    /index.html   200
 
