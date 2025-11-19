@@ -36,20 +36,7 @@ This is a lightweight, internal-only web-based browser for S3-compatible object 
     npm install
     ```
 
-3.  **Configure credentials:**
-    Create a `.env` file in the project root by copying the example:
-    ```sh
-    cp .env.example .env
-    ```
-    Edit the `.env` file with your S3 endpoint, region, access key, and secret key:
-    ```
-    VITE_S3_ENDPOINT=https://s3.your-domain.com
-    VITE_S3_REGION=us-east-1
-    VITE_S3_ACCESS_KEY_ID=YOUR_ACCESS_KEY
-    VITE_S3_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
-    ```
-
-4.  **Run the development server:**
+3.  **Run the development server:**
     ```sh
     npm run dev
     ```

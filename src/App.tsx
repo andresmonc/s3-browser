@@ -8,6 +8,7 @@ import { getS3Client, refreshS3Client } from './s3-client';
 import { useCredentials } from './contexts/CredentialContext';
 import { hasEncryptedCredentials, verifyPasswordAndDecryptCredentials, clearEncryptedCredentials } from './utils/encryption';
 import { setupActivityTracking, isSessionTimedOut, updateLastActivity, detectTampering, clearSensitiveData } from './utils/security';
+import { downloadOfflineBundle } from './utils/downloadBundle';
 import type { S3Client } from '@aws-sdk/client-s3';
 import { useToast } from './hooks/useToast';
 
@@ -115,7 +116,7 @@ function App() {
                         <p className="text-slate-600 text-lg">Please configure your S3 credentials to continue.</p>
                     </div>
                     <button 
-                        className="w-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden group"
+                        className="w-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden group mb-4"
                         onClick={() => setIsSettingsOpen(true)}
                     >
                         <span className="relative z-10 flex items-center justify-center space-x-2">
@@ -125,6 +126,15 @@ function App() {
                             </svg>
                         </span>
                         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    </button>
+                    <button
+                        onClick={downloadOfflineBundle}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 text-sm text-slate-600 hover:text-slate-900 bg-white/50 hover:bg-white rounded-lg transition-all duration-200 border border-slate-200 hover:border-slate-300"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Download Offline Bundle</span>
                     </button>
                 </div>
                 <SettingsModal 
@@ -210,7 +220,17 @@ function AppContent() {
                             onSelectBucket={handleBucketSelect}
                         />
                     </div>
-                    <div className="p-4 border-t border-white/20">
+                    <div className="p-4 border-t border-white/20 space-y-2">
+                        <button
+                            onClick={downloadOfflineBundle}
+                            className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-800 bg-white/50 hover:bg-white rounded-lg transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md border border-slate-200/50 hover:border-slate-300"
+                            title="Download Offline Bundle"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Download Bundle</span>
+                        </button>
                         <button
                             onClick={() => setIsSettingsOpen(true)}
                             className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-slate-700 hover:text-white bg-white/50 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 rounded-lg transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-md border border-slate-200/50 hover:border-transparent"
