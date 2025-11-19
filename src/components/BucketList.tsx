@@ -74,14 +74,14 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Buckets</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Buckets</h2>
                 <Button 
                     onClick={() => setIsModalOpen(true)}
                     variant="primary"
-                    size="md"
+                    size="sm"
                     icon={
-                        <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                     }
@@ -89,39 +89,39 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                     New
                 </Button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-1.5">
                 {buckets.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float">
-                            <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3 animate-float">
+                            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
                         </div>
-                        <p className="text-base font-semibold text-slate-600 mb-1">No buckets yet</p>
-                        <p className="text-sm text-slate-400">Create your first bucket to get started</p>
+                        <p className="text-sm font-semibold text-slate-600 mb-1">No buckets yet</p>
+                        <p className="text-xs text-slate-400">Create your first bucket to get started</p>
                     </div>
                 ) : (
                     buckets.map((bucket, index) => (
                         <div
                             key={bucket}
                             style={{ animationDelay: `${index * 50}ms` }}
-                            className={`group relative flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
+                            className={`group relative flex items-center justify-between p-2 rounded-lg border transition-all duration-300 cursor-pointer transform hover:scale-[1.01] ${
                                 selectedBucket === bucket
-                                    ? 'bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 border-transparent shadow-xl text-white'
-                                    : 'bg-white/80 backdrop-blur-sm border-slate-200 hover:border-blue-300 hover:shadow-lg'
+                                    ? 'bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 border-transparent shadow-lg text-white'
+                                    : 'bg-white/80 backdrop-blur-sm border-slate-200 hover:border-blue-300 hover:shadow-md'
                             }`}
                         >
                             <div 
                                 onClick={() => onSelectBucket(bucket)} 
-                                className="flex-1 min-w-0 pr-3"
+                                className="flex-1 min-w-0 pr-2"
                             >
-                                <div className="flex items-center space-x-3">
-                                    <div className={`w-3 h-3 rounded-full ${
+                                <div className="flex items-center space-x-2">
+                                    <div className={`w-2 h-2 rounded-full ${
                                         selectedBucket === bucket 
-                                            ? 'bg-white shadow-lg' 
+                                            ? 'bg-white shadow-md' 
                                             : 'bg-gradient-to-r from-blue-400 to-purple-400'
                                     } animate-pulse`}></div>
-                                    <span className={`font-bold truncate text-base ${
+                                    <span className={`font-semibold truncate text-sm ${
                                         selectedBucket === bucket 
                                             ? 'text-white' 
                                             : 'text-slate-700'
@@ -130,7 +130,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                                     </span>
                                 </div>
                             </div>
-                            <div className={`flex items-center space-x-1 transition-opacity duration-300 ${
+                            <div className={`flex items-center space-x-0.5 transition-opacity duration-300 ${
                                 selectedBucket === bucket ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                             }`}>
                                 <button
@@ -139,14 +139,14 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                                         setSelectedBucketForSettings(bucket);
                                         setIsSettingsModalOpen(true);
                                     }}
-                                    className={`p-2 rounded-lg transition-all duration-200 transform hover:scale-110 ${
+                                    className={`p-1.5 rounded-md transition-all duration-200 transform hover:scale-110 ${
                                         selectedBucket === bucket
                                             ? 'text-white hover:bg-white/20'
                                             : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50'
                                     }`}
                                     title="Settings"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                     </svg>
                                 </button>
@@ -155,14 +155,14 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                                         e.stopPropagation();
                                         handleRenameBucket(bucket);
                                     }}
-                                    className={`p-2 rounded-lg transition-all duration-200 transform hover:scale-110 ${
+                                    className={`p-1.5 rounded-md transition-all duration-200 transform hover:scale-110 ${
                                         selectedBucket === bucket
                                             ? 'text-white hover:bg-white/20'
                                             : 'text-slate-600 hover:text-indigo-600 hover:bg-indigo-50'
                                     }`}
                                     title="Rename"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
@@ -171,14 +171,14 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
                                         e.stopPropagation();
                                         handleDeleteBucket(bucket);
                                     }}
-                                    className={`p-2 rounded-lg transition-all duration-200 transform hover:scale-110 ${
+                                    className={`p-1.5 rounded-md transition-all duration-200 transform hover:scale-110 ${
                                         selectedBucket === bucket
                                             ? 'text-white hover:bg-white/20'
                                             : 'text-slate-600 hover:text-red-600 hover:bg-red-50'
                                     }`}
                                     title="Delete"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
