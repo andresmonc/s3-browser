@@ -1,4 +1,4 @@
-import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketPolicyCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketPolicyCommand, PutBucketWebsiteCommand, DeleteBucketPolicyCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand, GetPublicAccessBlockCommand, PutPublicAccessBlockCommand, DeletePublicAccessBlockCommand } from "@aws-sdk/client-s3";
+import { GetBucketCorsCommand, GetBucketLoggingCommand, GetBucketWebsiteCommand, PutBucketCorsCommand, PutBucketLoggingCommand, PutBucketWebsiteCommand, DeleteBucketCorsCommand, DeleteBucketWebsiteCommand, GetPublicAccessBlockCommand, PutPublicAccessBlockCommand, DeletePublicAccessBlockCommand } from "@aws-sdk/client-s3";
 import { useEffect, useState } from "react";
 import { getS3Client } from "../s3-client";
 import Modal from './ui/Modal';
@@ -16,7 +16,6 @@ interface BucketSettingsModalProps {
 }
 
 const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModalProps) => {
-    const [bucketPolicy, setBucketPolicy] = useState('');
     const [corsRules, setCorsRules] = useState('');
     const [websiteConfig, setWebsiteConfig] = useState('');
     const [loggingConfig, setLoggingConfig] = useState('');
@@ -36,37 +35,6 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         const fetchBucketSettings = async () => {
             const client = getS3Client();
             if (!client) return;
-
-            try {
-                const policy = await client.send(new GetBucketPolicyCommand({ Bucket: bucketName }));
-                setBucketPolicy(policy.Policy || JSON.stringify({
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": "*",
-                            "Action": "s3:GetObject",
-                            "Resource": `arn:aws:s3:::${bucketName}/*`
-                        }
-                    ]
-                }, null, 2));
-            } catch (error) {
-                if ((error as any).name !== 'NoSuchBucketPolicy') {
-                    console.error('Error fetching bucket policy:', error);
-                } else {
-                    setBucketPolicy(JSON.stringify({
-                        "Version": "2012-10-17",
-                        "Statement": [
-                            {
-                                "Effect": "Allow",
-                                "Principal": "*",
-                                "Action": "s3:GetObject",
-                                "Resource": `arn:aws:s3:::${bucketName}/*`
-                            }
-                        ]
-                    }, null, 2));
-                }
-            }
 
             try {
                 const cors = await client.send(new GetBucketCorsCommand({ Bucket: bucketName }));
@@ -146,16 +114,6 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
         const client = getS3Client();
         if (!client || !hasUnsavedChanges) return;
         const errors: string[] = [];
-
-        try {
-            if (bucketPolicy) {
-                await client.send(new PutBucketPolicyCommand({ Bucket: bucketName, Policy: bucketPolicy }));
-            } else {
-                await client.send(new DeleteBucketPolicyCommand({ Bucket: bucketName }));
-            }
-        } catch (e: any) {
-            errors.push(`Error saving bucket policy: ${e.message}`);
-        }
 
         try {
             if (corsRules) {
@@ -258,13 +216,11 @@ const BucketSettingsModal = ({ bucketName, isOpen, onClose }: BucketSettingsModa
             <div className="space-y-6">
                 {error && <ErrorAlert message={error} />}
 
-                <Textarea
-                    label="Bucket Policy (JSON)"
-                    value={bucketPolicy}
-                    onChange={handleChange(setBucketPolicy)}
-                    style={{ height: '150px' }}
-                    placeholder="Enter bucket policy JSON..."
-                />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> Bucket Policy editing has been moved to the Permissions tab.
+                    </p>
+                </div>
 
                 <Textarea
                     label="CORS Rules (JSON)"
