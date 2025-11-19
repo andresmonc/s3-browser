@@ -3,29 +3,69 @@ import { Routes, Route, useParams, useNavigate, useLocation } from 'react-router
 import BucketList from './components/BucketList';
 import ObjectList from './components/ObjectList';
 import SettingsModal from './components/SettingsModal';
+import PasswordModal from './components/PasswordModal';
 import { getS3Client, refreshS3Client } from './s3-client';
+import { useCredentials } from './contexts/CredentialContext';
+import { hasEncryptedCredentials, verifyPasswordAndDecryptCredentials, clearEncryptedCredentials } from './utils/encryption';
 import type { S3Client } from '@aws-sdk/client-s3';
 import { useToast } from './hooks/useToast';
 
 function App() {
-    const [s3Client, setS3Client] = useState<S3Client | null>(getS3Client());
+    const { credentials, setCredentials, clearCredentials } = useCredentials();
+    const [s3Client, setS3Client] = useState<S3Client | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const { showSuccess } = useToast();
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const { showSuccess, showError, showInfo } = useToast();
 
     useEffect(() => {
-        // Check if credentials exist on mount
-        const client = getS3Client();
-        if (!client) {
+        // Check if encrypted credentials exist
+        if (hasEncryptedCredentials()) {
+            // Need to prompt for password
+            setIsPasswordModalOpen(true);
+        } else {
+            // No credentials, show settings
             setIsSettingsOpen(true);
         }
-        setS3Client(client);
     }, []);
 
+    useEffect(() => {
+        // Update S3 client when credentials change
+        if (credentials) {
+            const client = getS3Client(credentials);
+            setS3Client(client);
+        } else {
+            setS3Client(null);
+        }
+    }, [credentials]);
+
+    const handlePasswordVerified = async (password: string) => {
+        try {
+            const decryptedCreds = await verifyPasswordAndDecryptCredentials(password);
+            setCredentials(decryptedCreds);
+            setIsPasswordModalOpen(false);
+            showSuccess('Credentials unlocked successfully!');
+        } catch (error: any) {
+            showError(error.message || 'Failed to decrypt credentials');
+        }
+    };
+
+    const handlePasswordSet = async (password: string) => {
+        // This shouldn't happen here, but handle it gracefully
+        setIsPasswordModalOpen(false);
+        setIsSettingsOpen(true);
+    };
+
+    const handleResetCredentials = () => {
+        clearEncryptedCredentials();
+        clearCredentials();
+        setIsPasswordModalOpen(false);
+        setIsSettingsOpen(true);
+        showInfo('Credentials reset. Please reconfigure your S3 settings.');
+    };
+
     const handleSaveCredentials = () => {
-        const client = refreshS3Client();
-        setS3Client(client);
         setIsSettingsOpen(false);
-        if (client) {
+        if (credentials) {
             showSuccess('S3 connection established successfully!');
         }
     };
@@ -69,6 +109,17 @@ function App() {
                     onClose={() => setIsSettingsOpen(false)}
                     onSave={handleSaveCredentials}
                 />
+                <PasswordModal
+                    isOpen={isPasswordModalOpen}
+                    isFirstTime={false}
+                    onPasswordVerified={handlePasswordVerified}
+                    onPasswordSet={handlePasswordSet}
+                    onCancel={() => {
+                        setIsPasswordModalOpen(false);
+                        setIsSettingsOpen(true);
+                    }}
+                    onReset={handleResetCredentials}
+                />
             </div>
         );
     }
@@ -88,20 +139,13 @@ function App() {
 function AppContent() {
     const location = useLocation();
     const navigate = useNavigate();
+    const { credentials } = useCredentials();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const { showSuccess } = useToast();
 
-    useEffect(() => {
-        const client = getS3Client();
-        if (!client) {
-            setIsSettingsOpen(true);
-        }
-    }, []);
-
     const handleSaveCredentials = () => {
-        const client = refreshS3Client();
         setIsSettingsOpen(false);
-        if (client) {
+        if (credentials) {
             showSuccess('S3 connection established successfully!');
         }
     };

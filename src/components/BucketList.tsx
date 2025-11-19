@@ -6,6 +6,7 @@ import BucketSettingsModal from './BucketSettingsModal';
 import RenameBucketModal from './RenameBucketModal';
 import Button from './ui/Button';
 import { useToast } from '../hooks/useToast';
+import { useCredentials } from '../contexts/CredentialContext';
 
 interface BucketListProps {
     selectedBucket: string | null;
@@ -13,6 +14,7 @@ interface BucketListProps {
 }
 
 const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
+    const { credentials } = useCredentials();
     const [buckets, setBuckets] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -29,7 +31,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
 
     useEffect(() => {
         const fetchBuckets = async () => {
-            const client = getS3Client();
+            const client = getS3Client(credentials);
             if (!client) return;
             try {
                 const response = await client.send(new ListBucketsCommand({}));
@@ -40,7 +42,7 @@ const BucketList = ({ selectedBucket, onSelectBucket }: BucketListProps) => {
         };
 
         fetchBuckets();
-    }, [refresh]);
+    }, [refresh, credentials]);
 
     const handleCreateBucket = (bucketName: string) => {
         setIsModalOpen(false);

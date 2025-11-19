@@ -3,10 +3,13 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Input } from './ui/Input';
 import ErrorAlert from './ui/ErrorAlert';
+import PasswordModal from './PasswordModal';
 import { ICON_GRADIENTS } from '../utils/constants';
 import { useToast } from '../hooks/useToast';
+import { encryptAndStoreCredentials, hasEncryptedCredentials } from '../utils/encryption';
+import { useCredentials } from '../contexts/CredentialContext';
 
-interface S3Credentials {
+export interface S3Credentials {
     endpoint: string;
     region: string;
     accessKeyId?: string;
@@ -19,28 +22,6 @@ interface SettingsModalProps {
     onSave: (credentials: S3Credentials) => void;
 }
 
-const STORAGE_KEY = 's3-browser-credentials';
-
-export const loadCredentialsFromStorage = (): S3Credentials | null => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (error) {
-        console.error('Error loading credentials from storage:', error);
-    }
-    return null;
-};
-
-export const saveCredentialsToStorage = (credentials: S3Credentials): void => {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials));
-    } catch (error) {
-        console.error('Error saving credentials to storage:', error);
-    }
-};
-
 const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     const [endpoint, setEndpoint] = useState('');
     const [region, setRegion] = useState('us-east-1');
@@ -48,16 +29,19 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     const [secretAccessKey, setSecretAccessKey] = useState('');
     const [showSecret, setShowSecret] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [pendingCredentials, setPendingCredentials] = useState<S3Credentials | null>(null);
     const { showSuccess, showError: showErrorToast } = useToast();
+    const { credentials: currentCreds, setCredentials } = useCredentials();
 
     useEffect(() => {
         if (isOpen) {
-            const stored = loadCredentialsFromStorage();
-            if (stored) {
-                setEndpoint(stored.endpoint || '');
-                setRegion(stored.region || 'us-east-1');
-                setAccessKeyId(stored.accessKeyId || '');
-                setSecretAccessKey(stored.secretAccessKey || '');
+            // Load from in-memory credentials if available
+            if (currentCreds) {
+                setEndpoint(currentCreds.endpoint || '');
+                setRegion(currentCreds.region || 'us-east-1');
+                setAccessKeyId(currentCreds.accessKeyId || '');
+                setSecretAccessKey(currentCreds.secretAccessKey || '');
             } else {
                 // Reset to defaults
                 setEndpoint('');
@@ -67,7 +51,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
             }
             setError(null);
         }
-    }, [isOpen]);
+    }, [isOpen, currentCreds]);
 
     const handleSave = () => {
         if (!endpoint) {
@@ -82,10 +66,48 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
             secretAccessKey: secretAccessKey.trim() || undefined,
         };
 
-        saveCredentialsToStorage(credentials);
-        showSuccess('S3 configuration saved successfully!');
-        onSave(credentials);
-        onClose();
+        // Check if we need to set/update password
+        if (hasEncryptedCredentials()) {
+            // Credentials exist, need password to update
+            setPendingCredentials(credentials);
+            setShowPasswordModal(true);
+        } else {
+            // First time setup - need to set password
+            setPendingCredentials(credentials);
+            setShowPasswordModal(true);
+        }
+    };
+
+    const handlePasswordSet = async (password: string) => {
+        if (!pendingCredentials) return;
+
+        try {
+            await encryptAndStoreCredentials(pendingCredentials, password);
+            setCredentials(pendingCredentials);
+            showSuccess('S3 configuration saved and encrypted successfully!');
+            onSave(pendingCredentials);
+            setShowPasswordModal(false);
+            setPendingCredentials(null);
+            onClose();
+        } catch (error: any) {
+            showErrorToast(`Failed to encrypt credentials: ${error.message}`);
+        }
+    };
+
+    const handlePasswordVerified = async (password: string) => {
+        if (!pendingCredentials) return;
+
+        try {
+            await encryptAndStoreCredentials(pendingCredentials, password);
+            setCredentials(pendingCredentials);
+            showSuccess('S3 configuration updated successfully!');
+            onSave(pendingCredentials);
+            setShowPasswordModal(false);
+            setPendingCredentials(null);
+            onClose();
+        } catch (error: any) {
+            showErrorToast(`Failed to update credentials: ${error.message}`);
+        }
     };
 
     const icon = (
@@ -96,12 +118,12 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     );
 
     const footer = (
-        <div className="flex justify-end space-x-4">
-            <Button variant="secondary" onClick={onClose}>
+        <div className="flex justify-end space-x-2">
+            <Button variant="secondary" onClick={onClose} size="sm">
                 Cancel
             </Button>
-            <Button variant="primary" onClick={handleSave} icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <Button variant="primary" onClick={handleSave} size="sm" icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
             }>
@@ -111,6 +133,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
     );
 
     return (
+        <>
         <Modal
             isOpen={isOpen}
             onClose={onClose}
@@ -121,7 +144,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
             maxWidth="2xl"
             headerGradient={true}
         >
-            <div className="space-y-6">
+            <div className="space-y-4">
                 {error && <ErrorAlert message={error} />}
                 
                 <Input
@@ -165,10 +188,10 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
                 />
 
                 <div>
-                    <label htmlFor="secretAccessKey" className="block text-sm font-bold text-slate-700 mb-3">
+                    <label htmlFor="secretAccessKey" className="block text-xs font-semibold text-slate-700 mb-1.5">
                         Secret Access Key
                     </label>
-                    <div className="flex space-x-3">
+                    <div className="flex space-x-2">
                         <input
                             type={showSecret ? 'text' : 'password'}
                             id="secretAccessKey"
@@ -177,21 +200,35 @@ const SettingsModal = ({ isOpen, onClose, onSave }: SettingsModalProps) => {
                                 setSecretAccessKey(e.target.value);
                                 setError(null);
                             }}
-                            className="flex-1 px-5 py-3.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm font-medium shadow-sm hover:shadow-md"
+                            className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200 bg-white font-medium"
                             placeholder="Your secret access key (optional)"
                         />
                         <Button
                             variant="secondary"
                             onClick={() => setShowSecret(!showSecret)}
-                            className="px-6"
+                            size="sm"
+                            className="px-3"
                         >
                             {showSecret ? 'Hide' : 'Show'}
                         </Button>
                     </div>
-                    <small className="text-slate-500 text-xs mt-2 block font-medium">Optional: Required only for authenticated access</small>
+                    <small className="text-slate-500 text-xs mt-1 block">Optional: Required only for authenticated access</small>
                 </div>
             </div>
         </Modal>
+        {showPasswordModal && (
+            <PasswordModal
+                isOpen={showPasswordModal}
+                isFirstTime={!hasEncryptedCredentials()}
+                onPasswordSet={handlePasswordSet}
+                onPasswordVerified={handlePasswordVerified}
+                onCancel={() => {
+                    setShowPasswordModal(false);
+                    setPendingCredentials(null);
+                }}
+            />
+        )}
+    </>
     );
 };
 

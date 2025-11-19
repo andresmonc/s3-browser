@@ -1,9 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { loadCredentialsFromStorage } from './components/SettingsModal';
+import type { S3Credentials } from './components/SettingsModal';
 
-export const getS3Client = (): S3Client | null => {
-    const credentials = loadCredentialsFromStorage();
-    
+export const getS3Client = (credentials: S3Credentials | null): S3Client | null => {
     if (!credentials || !credentials.endpoint) {
         return null;
     }
@@ -27,6 +25,6 @@ export const getS3Client = (): S3Client | null => {
 };
 
 // Function to refresh the client instance (call this after updating credentials)
-export const refreshS3Client = (): S3Client | null => {
-    return getS3Client();
+export const refreshS3Client = (credentials: S3Credentials | null): S3Client | null => {
+    return getS3Client(credentials);
 };

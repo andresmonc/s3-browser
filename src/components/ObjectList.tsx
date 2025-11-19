@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getS3Client } from '../s3-client';
+import { useCredentials } from '../contexts/CredentialContext';
 import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, _Object } from '@aws-sdk/client-s3';
 import prettyBytes from 'pretty-bytes';
 import { useDropzone } from 'react-dropzone';
@@ -32,6 +33,7 @@ const ObjectList = ({}: ObjectListProps) => {
     const { bucketName, '*' : pathParam } = useParams<{ bucketName?: string; '*'?: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const { credentials } = useCredentials();
     
     const selectedBucket = bucketName ? decodeURIComponent(bucketName) : null;
     // React Router already decodes the path parameter
@@ -57,7 +59,7 @@ const ObjectList = ({}: ObjectListProps) => {
     };
 
     const handleFileUpload = useCallback(async (acceptedFiles: File[]) => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) return;
 
         const newUploads = acceptedFiles.map(file => ({ file, progress: 0 }));
@@ -105,7 +107,7 @@ const ObjectList = ({}: ObjectListProps) => {
     };
 
     useEffect(() => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) {
             setObjects([]);
             return;
@@ -133,7 +135,7 @@ const ObjectList = ({}: ObjectListProps) => {
     }, [selectedBucket, currentPath, refresh]);
 
     const handleDeleteObject = async (key: string) => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) return;
 
         if (window.confirm(`Are you sure you want to delete "${key}"?`)) {
@@ -149,7 +151,7 @@ const ObjectList = ({}: ObjectListProps) => {
 
     const handleBulkDelete = async () => {
         if (selectedObjects.size === 0) return;
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) return;
 
         if (window.confirm(`Are you sure you want to delete ${selectedObjects.size} object(s)?`)) {
@@ -215,7 +217,7 @@ const ObjectList = ({}: ObjectListProps) => {
     const isVideo = (key: string) => /\.(mp4|avi|mov|wmv|flv|webm)$/i.test(key);
 
     const handleDownloadObject = async (key: string) => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) return;
 
         try {
@@ -241,7 +243,7 @@ const ObjectList = ({}: ObjectListProps) => {
     };
 
     const handleDownloadBucket = async () => {
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!selectedBucket || !client) return;
 
         setIsDownloading(true);

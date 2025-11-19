@@ -6,6 +6,7 @@ import Button from './ui/Button';
 import { Input } from './ui/Input';
 import { BUCKET_NAME_REGEX, ICON_GRADIENTS } from '../utils/constants';
 import { useToast } from '../hooks/useToast';
+import { useCredentials } from '../contexts/CredentialContext';
 
 interface CreateBucketModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface CreateBucketModalProps {
 }
 
 const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps) => {
+    const { credentials } = useCredentials();
     const [bucketName, setBucketName] = useState('');
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ const CreateBucketModal = ({ isOpen, onClose, onCreate }: CreateBucketModalProps
         // Prevent double submission
         if (creating) return;
         
-        const client = getS3Client();
+        const client = getS3Client(credentials);
         if (!client) {
             setError('S3 client not configured. Please configure your credentials.');
             return;
