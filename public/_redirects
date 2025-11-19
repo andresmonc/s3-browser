@@ -1,4 +1,4 @@
 # Cloudflare Pages redirects for SPA routing
-# Redirect all requests to index.html except for actual files
+# Note: Cloudflare Pages automatically excludes existing files from redirects
+# So /index.html and /assets/* won't be redirected
 /*    /index.html   200
-
