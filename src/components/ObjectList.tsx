@@ -21,7 +21,10 @@ interface UploadProgress {
     progress: number;
 }
 
+type TabType = 'objects' | 'metadata' | 'properties' | 'permissions' | 'metrics' | 'management' | 'access-points';
+
 const ObjectList = ({ selectedBucket }: ObjectListProps) => {
+    const [activeTab, setActiveTab] = useState<TabType>('objects');
     const [objects, setObjects] = useState<_Object[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPath, setCurrentPath] = useState('');
@@ -256,62 +259,86 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
             }`}
         >
             <input {...getInputProps()} />
-            <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Objects</h2>
-                        <p className="text-sm text-slate-600 font-medium">Bucket: <span className="font-bold text-slate-800 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">{selectedBucket}</span></p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <Button 
-                            onClick={handleUploadButtonClick}
-                            variant="primary"
-                            className="flex items-center space-x-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <span>Upload Files</span>
-                        </Button>
-                    </div>
-                </div>
-                <BucketStats bucketName={selectedBucket} />
-                {uploads.length > 0 && (
-                    <div className="mt-6 space-y-3">
-                        <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Uploading:</span>
-                        </h4>
-                        {uploads.map((upload, index) => (
-                            <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-200 shadow-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span className="text-sm font-bold text-slate-700 truncate">{upload.file.name}</span>
-                                    </div>
-                                    <span className="text-xs font-bold text-blue-600 bg-white px-2 py-1 rounded-lg ml-2">{upload.progress}%</span>
-                                </div>
-                                <div className="w-full bg-white rounded-full h-3 overflow-hidden shadow-inner">
-                                    <div 
-                                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
-                                        style={{ width: `${upload.progress}%` }}
-                                    >
-                                        <div className="absolute inset-0 animate-shimmer"></div>
-                                    </div>
-                                </div>
+            <div className="border-b border-slate-200/50 bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50">
+                <div className="p-8 pb-4">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Bucket Viewer</h2>
+                            <p className="text-sm text-slate-600 font-medium">Bucket: <span className="font-bold text-slate-800 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">{selectedBucket}</span></p>
+                        </div>
+                        {activeTab === 'objects' && (
+                            <div className="flex items-center space-x-4">
+                                <Button 
+                                    onClick={handleUploadButtonClick}
+                                    variant="primary"
+                                    className="flex items-center space-x-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    <span>Upload Files</span>
+                                </Button>
                             </div>
+                        )}
+                    </div>
+                    {activeTab === 'objects' && uploads.length > 0 && (
+                        <div className="mt-6 space-y-3">
+                            <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center space-x-2">
+                                <svg className="w-5 h-5 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Uploading:</span>
+                            </h4>
+                            {uploads.map((upload, index) => (
+                                <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-2 border-blue-200 shadow-lg">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                            <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span className="text-sm font-bold text-slate-700 truncate">{upload.file.name}</span>
+                                        </div>
+                                        <span className="text-xs font-bold text-blue-600 bg-white px-2 py-1 rounded-lg ml-2">{upload.progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-white rounded-full h-3 overflow-hidden shadow-inner">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                                            style={{ width: `${upload.progress}%` }}
+                                        >
+                                            <div className="absolute inset-0 animate-shimmer"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                
+                {/* Tabs */}
+                <div className="px-8 border-t border-slate-200/50">
+                    <div className="flex space-x-1 overflow-x-auto">
+                        {(['objects', 'metadata', 'properties', 'permissions', 'metrics', 'management', 'access-points'] as TabType[]).map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-4 py-3 text-sm font-medium transition-all duration-200 whitespace-nowrap border-b-2 ${
+                                    activeTab === tab
+                                        ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                                        : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
+                                }`}
+                            >
+                                {tab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                            </button>
                         ))}
                     </div>
-                )}
+                </div>
             </div>
             
             <div className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full max-w-full">
-                {/* Breadcrumbs */}
-                {currentPath && (
+                {activeTab === 'objects' && (
+                    <>
+                        {/* Breadcrumbs */}
+                        {currentPath && (
                     <div className="mb-4 flex items-center justify-between">
                         <Breadcrumbs path={currentPath} onNavigate={navigateToFolder} />
                         <Button variant="secondary" size="sm" onClick={navigateUp}>
@@ -560,6 +587,94 @@ const ObjectList = ({ selectedBucket }: ObjectListProps) => {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                )}
+                    </>
+                )}
+                
+                {activeTab === 'metadata' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Metadata</h3>
+                            <p className="text-slate-500">Bucket metadata information will be displayed here.</p>
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'properties' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Properties</h3>
+                            <p className="text-slate-500">Bucket properties and configuration will be displayed here.</p>
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'permissions' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Permissions</h3>
+                            <p className="text-slate-500">Bucket access permissions and policies will be displayed here.</p>
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'metrics' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Metrics</h3>
+                            <p className="text-slate-500">Bucket usage metrics and analytics will be displayed here.</p>
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'management' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Management</h3>
+                            <p className="text-slate-500">Bucket management settings and lifecycle policies will be displayed here.</p>
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'access-points' && (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">Access Points</h3>
+                            <p className="text-slate-500">Bucket access points configuration will be displayed here.</p>
+                        </div>
                     </div>
                 )}
             </div>
