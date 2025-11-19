@@ -5,6 +5,7 @@ import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObje
 import prettyBytes from 'pretty-bytes';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from '@aws-sdk/lib-storage';
+import JSZip from 'jszip';
 import Button from './ui/Button';
 import ObjectPreviewModal from './ObjectPreviewModal';
 import ObjectDetailsModal from './ObjectDetailsModal';
@@ -46,6 +47,8 @@ const ObjectList = ({}: ObjectListProps) => {
     const [copyObject, setCopyObject] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<'all' | 'images' | 'documents' | 'videos'>('all');
     const [uploads, setUploads] = useState<UploadProgress[]>([]);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
     const { showSuccess, showError, showInfo } = useToast();
 
     const forceRefresh = () => {
@@ -237,6 +240,93 @@ const ObjectList = ({}: ObjectListProps) => {
         }
     };
 
+    const handleDownloadBucket = async () => {
+        const client = getS3Client();
+        if (!selectedBucket || !client) return;
+
+        setIsDownloading(true);
+        setDownloadProgress({ current: 0, total: 0 });
+
+        try {
+            showInfo('Preparing bucket download...');
+            
+            // List all objects recursively
+            let allObjects: _Object[] = [];
+            let continuationToken: string | undefined = undefined;
+            let isTruncated = true;
+
+            while (isTruncated) {
+                const response = await client.send(new ListObjectsV2Command({
+                    Bucket: selectedBucket,
+                    ContinuationToken: continuationToken
+                }));
+                
+                if (response.Contents) {
+                    allObjects = [...allObjects, ...response.Contents];
+                }
+                
+                isTruncated = response.IsTruncated || false;
+                continuationToken = response.NextContinuationToken;
+            }
+
+            if (allObjects.length === 0) {
+                showError('Bucket is empty');
+                setIsDownloading(false);
+                return;
+            }
+
+            setDownloadProgress({ current: 0, total: allObjects.length });
+            showInfo(`Downloading ${allObjects.length} objects...`);
+
+            // Create zip file
+            const zip = new JSZip();
+
+            // Download each object and add to zip
+            for (let i = 0; i < allObjects.length; i++) {
+                const obj = allObjects[i];
+                const key = obj.Key;
+                
+                if (!key) continue;
+
+                try {
+                    const command = new GetObjectCommand({ Bucket: selectedBucket, Key: key });
+                    const response = await client.send(command);
+                    const body = await response.Body?.transformToByteArray();
+                    
+                    if (body) {
+                        zip.file(key, body);
+                    }
+                } catch (error: any) {
+                    console.error(`Failed to download ${key}:`, error);
+                    // Continue with other files
+                }
+
+                setDownloadProgress({ current: i + 1, total: allObjects.length });
+            }
+
+            // Generate zip file
+            showInfo('Creating zip file...');
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            
+            // Download zip
+            const url = window.URL.createObjectURL(zipBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${selectedBucket}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            showSuccess(`Bucket "${selectedBucket}" downloaded successfully!`);
+        } catch (error: any) {
+            showError(`Failed to download bucket: ${error.message || 'Unknown error'}`);
+        } finally {
+            setIsDownloading(false);
+            setDownloadProgress({ current: 0, total: 0 });
+        }
+    };
+
     const filteredObjects = objects.filter(obj => {
         const key = obj.Key || '';
         const matchesSearch = key.toLowerCase().includes(searchTerm.toLowerCase());
@@ -282,23 +372,45 @@ const ObjectList = ({}: ObjectListProps) => {
         >
             <input {...getInputProps()} />
             <div className="border-b border-slate-200/50 bg-gradient-to-r from-blue-50/50 via-indigo-50/50 to-purple-50/50">
-                <div className="p-8 pb-4">
-                    <div className="flex items-center justify-between mb-6">
+                <div className="p-6 pb-3">
+                    <div className="flex items-center justify-between mb-3">
                         <div>
                             <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Bucket Viewer</h2>
                             <p className="text-sm text-slate-600 font-medium">Bucket: <span className="font-bold text-slate-800 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">{selectedBucket}</span></p>
                         </div>
                         {activeTab === 'objects' && (
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
                                 <Button 
                                     onClick={handleUploadButtonClick}
                                     variant="primary"
                                     className="flex items-center space-x-2"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                     </svg>
                                     <span>Upload Files</span>
+                                </Button>
+                                <Button 
+                                    onClick={handleDownloadBucket}
+                                    variant="primary"
+                                    className="flex items-center space-x-2"
+                                    disabled={isDownloading || !selectedBucket}
+                                >
+                                    {isDownloading ? (
+                                        <>
+                                            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            <span>Downloading... ({downloadProgress.current}/{downloadProgress.total})</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                            </svg>
+                                            <span>Download Bucket</span>
+                                        </>
+                                    )}
                                 </Button>
                             </div>
                         )}
@@ -337,13 +449,13 @@ const ObjectList = ({}: ObjectListProps) => {
                 </div>
                 
                 {/* Tabs */}
-                <div className="px-8 border-t border-slate-200/50">
+                <div className="px-6 border-t border-slate-200/50">
                     <div className="flex space-x-1 overflow-x-auto">
                         {(['objects', 'metadata', 'properties', 'permissions', 'metrics', 'management', 'access-points'] as TabType[]).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-3 text-sm font-medium transition-all duration-200 whitespace-nowrap border-b-2 ${
+                                className={`px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap border-b-2 ${
                                     activeTab === tab
                                         ? 'border-blue-600 text-blue-600 bg-blue-50/50'
                                         : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300'
@@ -356,12 +468,12 @@ const ObjectList = ({}: ObjectListProps) => {
                 </div>
             </div>
             
-            <div className="p-8 flex-1 overflow-x-hidden overflow-y-auto w-full max-w-full">
+            <div className="px-6 pt-4 pb-6 flex-1 overflow-x-hidden overflow-y-auto w-full max-w-full">
                 {activeTab === 'objects' && (
                     <>
                         {/* Breadcrumbs */}
                         {currentPath && (
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-3 flex items-center justify-between">
                         <Breadcrumbs path={currentPath} onNavigate={navigateToFolder} />
                         <Button variant="secondary" size="sm" onClick={navigateUp}>
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,27 +485,27 @@ const ObjectList = ({}: ObjectListProps) => {
                 )}
 
                 {/* Search and Filters */}
-                <div className="mb-6 space-y-4">
+                <div className="mb-4 space-y-2">
                     <div className="relative group">
-                        <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input
                             type="text"
                             placeholder="Search objects..."
-                            className="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md font-medium"
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md"
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center space-x-3">
-                        <span className="text-sm font-semibold text-slate-700">Filter:</span>
+                    <div className="flex items-center space-x-2">
+                        <span className="text-xs font-semibold text-slate-700">Filter:</span>
                         {(['all', 'images', 'documents', 'videos'] as const).map(type => (
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                className={`px-3 py-1 text-xs rounded-md font-medium transition-all duration-200 ${
                                     filterType === type
-                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
                                         : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                                 }`}
                             >
@@ -405,9 +517,9 @@ const ObjectList = ({}: ObjectListProps) => {
 
                 {/* Bulk Actions */}
                 {selectedObjects.size > 0 && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200 flex items-center justify-between">
-                        <span className="font-bold text-blue-700">{selectedObjects.size} object(s) selected</span>
-                        <div className="flex space-x-2">
+                    <div className="mb-3 p-2.5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 flex items-center justify-between">
+                        <span className="font-semibold text-sm text-blue-700">{selectedObjects.size} object(s) selected</span>
+                        <div className="flex space-x-1.5">
                             <Button variant="danger" size="sm" onClick={handleBulkDelete}>
                                 Delete Selected
                             </Button>
@@ -508,7 +620,7 @@ const ObjectList = ({}: ObjectListProps) => {
                         <table className="w-full">
                             <thead>
                                 <tr className="bg-gradient-to-r from-slate-50 to-blue-50/30 border-b-2 border-slate-200">
-                                    <th className="text-left py-3 px-4">
+                                    <th className="text-left py-2 px-3">
                                         <input
                                             type="checkbox"
                                             checked={selectedObjects.size === filteredObjects.length && filteredObjects.length > 0}
@@ -516,10 +628,10 @@ const ObjectList = ({}: ObjectListProps) => {
                                             className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                                         />
                                     </th>
-                                    <th className="text-left py-3 px-4 text-sm font-bold text-slate-700 uppercase tracking-wider">Name</th>
-                                    <th className="text-left py-3 px-4 text-sm font-bold text-slate-700 uppercase tracking-wider">Size</th>
-                                    <th className="text-left py-3 px-4 text-sm font-bold text-slate-700 uppercase tracking-wider">Last Modified</th>
-                                    <th className="text-right py-3 px-4 text-sm font-bold text-slate-700 uppercase tracking-wider">Actions</th>
+                                    <th className="text-left py-2 px-3 text-xs font-bold text-slate-700 uppercase tracking-wider">Name</th>
+                                    <th className="text-left py-2 px-3 text-xs font-bold text-slate-700 uppercase tracking-wider">Size</th>
+                                    <th className="text-left py-2 px-3 text-xs font-bold text-slate-700 uppercase tracking-wider">Last Modified</th>
+                                    <th className="text-right py-2 px-3 text-xs font-bold text-slate-700 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -535,7 +647,7 @@ const ObjectList = ({}: ObjectListProps) => {
                                                 isSelected ? 'bg-blue-50' : 'hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50'
                                             }`}
                                         >
-                                            <td className="py-3 px-4">
+                                            <td className="py-2 px-3">
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
@@ -543,37 +655,37 @@ const ObjectList = ({}: ObjectListProps) => {
                                                     className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                                                 />
                                             </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-200 ${
+                                            <td className="py-2 px-3">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className={`w-8 h-8 rounded-md flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-200 ${
                                                         isImage(key) ? 'bg-gradient-to-br from-pink-400 to-rose-500' :
                                                         isDocument(key) ? 'bg-gradient-to-br from-blue-400 to-indigo-500' :
                                                         isVideo(key) ? 'bg-gradient-to-br from-purple-400 to-pink-500' :
                                                         'bg-gradient-to-br from-blue-400 to-purple-400'
                                                     }`}>
                                                         {isImage(key) ? (
-                                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                             </svg>
                                                         ) : (
-                                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                             </svg>
                                                         )}
                                                     </div>
-                                                    <span className="text-slate-700 font-semibold group-hover:text-blue-600 transition-colors duration-200 cursor-pointer" 
+                                                    <span className="text-slate-700 font-semibold text-sm group-hover:text-blue-600 transition-colors duration-200 cursor-pointer" 
                                                           onClick={() => isImage(key) && setPreviewObject(key)}>
                                                         {displayName}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="py-4 px-4 whitespace-nowrap">
-                                                <span className="text-slate-700 font-medium text-sm">
+                                            <td className="py-2 px-3 whitespace-nowrap">
+                                                <span className="text-slate-700 font-medium text-xs">
                                                     {prettyBytes(obj.Size || 0)}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4 text-slate-600 font-medium text-sm whitespace-nowrap">{obj.LastModified?.toLocaleString()}</td>
-                                            <td className="py-4 px-4">
+                                            <td className="py-2 px-3 text-slate-600 font-medium text-xs whitespace-nowrap">{obj.LastModified?.toLocaleString()}</td>
+                                            <td className="py-2 px-3">
                                                 <div className="flex items-center justify-end space-x-1">
                                                     {isImage(key) && (
                                                         <button
